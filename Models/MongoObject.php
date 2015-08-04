@@ -2,8 +2,8 @@
 
 abstract class MongoObject
 {
-    private $data;
-    private $dataSource = NULL;
+    protected $data;
+    protected $dataSource;
 
     public function __construct($dataSource, $json = false) {
         if ($json) $this->data = $json;

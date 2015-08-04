@@ -1,7 +1,19 @@
 <?php
 
-// Composer
+// Dependancies
 require 'vendor/autoload.php';
+spl_autoload_register(function ($className) {
+    $classFile = str_replace(array('OTW\\', '\\'), array('', '/'),
+        $className) . '.php';
+
+    if (file_exists($classFile)) {
+        require_once $classFile;
+        if (class_exists($className)) {
+            return true;
+        }
+    }
+    return false;
+});
 
 // Slim API
 $app = new \Slim\Slim();
@@ -18,8 +30,7 @@ function getUsers() {
 $app->post('/login', function () use ($app) {
 
     // obtain an user with matching credentials
-    require_once 'models/users/user.php';
-    $users = \Users\User::pull(getUsers(), array(
+    $users = \OTW\Models\Users\User::pull(getUsers(), array(
         'username' => $app->request()->post('username'),
         'password' => $app->request()->post('password')
     ));
@@ -48,15 +59,14 @@ $app->post('/users', function() use ($app) {
     $dataSource = getUsers();
 
     // check if user exists
-    $users = \Users\User::pull($dataSource, array(
+    $users = \OTW\Models\Users\User::pull($dataSource, array(
         'username' => $app->request()->post('username')
     ));
 
     if (empty($users)) {
 
         // create the new user
-        require_once 'models/users/user.php';
-        $user = new \Users\User($dataSource, array(
+        $user = new \OTW\Models\Users\User($dataSource, array(
             'username' => $app->request()->post('username'),
             'password' => $app->request()->post('password')
         ));
@@ -70,7 +80,7 @@ $app->post('/users', function() use ($app) {
             $app->request()->post('homeUnit')
         );
 
-        $user->push();
+        $user->update();
         $app->render(201, array());
     } else {
         $app->render(409, array(
@@ -85,8 +95,7 @@ $app->post('/users', function() use ($app) {
 // API Routing: list all users
 // TODO: Block access, only used for debugging
 $app->get('/users', function() use ($app) {
-    require_once 'models/users/user.php';
-    $app->render(200, \Users\User::pull(getUsers(), array(), true));
+    $app->render(200, \OTW\Models\Users\User::pull(getUsers(), array(), true));
 });
 
 // Run
