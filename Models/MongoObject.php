@@ -1,13 +1,16 @@
 <?php namespace OTW\Models;
 
+// server credentials
+define('OTW\Models\MONGO_SERVER', 'mongodb://otw:Triangular@localhost:27017/OTW');
+
 abstract class MongoObject
 {
     protected $data;
     protected $dataSource;
 
-    public function __construct($dataSource, $json = false) {
+    public function __construct($json = false, $dataSource = false) {
         if ($json) $this->data = $json;
-        $this->dataSource = $dataSource;
+        if ($dataSource) $this->dataSource = $dataSource;
     }
 
     public function push($key) {
@@ -40,7 +43,7 @@ abstract class MongoObject
         $mongoQuery = $dataSource->find($query);
 
         foreach ($mongoQuery as $mongoData) {
-            $mongoObj = new $mongoFactory($dataSource, $mongoData);
+            $mongoObj = new $mongoFactory($mongoData, $dataSource);
             $mongoObjs[] = $asJson ? $mongoObj->data : $mongoObj;
         }
 
