@@ -72,7 +72,7 @@ class User extends \OTW\Models\MongoObject
      * @return User
      */
     public function addAddress($name, $street, $city, $region, $country, $postal,
-        $unit = NULL
+        $unit = null
     ) {
         if (!\array_key_exists('addresses', $this->data)) {
             $this->data['addresses'] = array();
@@ -133,7 +133,7 @@ class User extends \OTW\Models\MongoObject
     /**
      * Obtains all Users in MongoDB.
      *
-     * @param boolean Whether to return as a JSON representation
+     * @param boolean Whether to return each User as an array
      *
      * @return array
      */
@@ -145,6 +145,7 @@ class User extends \OTW\Models\MongoObject
      * Finds an User with attributes matching the $query array.
      *
      * @param array The query array to search with
+     * @param boolean Whether to return each User as an array
      *
      * @return array
      */
