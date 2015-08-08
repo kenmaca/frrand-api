@@ -2,11 +2,12 @@
 
 // POST /users/location: adds a new reported location for the given user
 $app->post('/users/:username/location', function($username) use ($app) {
-    $user = \OTW\Models\Users\User::fromApiKey(
-        $app->request()->headers('Authorization')
+    $user = \OTW\Models\Users\User::authenticateApiKey(
+        $app->request()->headers('Authorization'),
+        $username
     );
 
-    if ($user && strcmp($user->getUsername(), $username) == 0) {
+    if ($user) {
 
         // log current location for User with $username
         $location = \OTW\Models\Location\ReportedLocation::report(
@@ -26,11 +27,12 @@ $app->post('/users/:username/location', function($username) use ($app) {
 
 // GET /users/location: lists all reported locations for the given user
 $app->get('/users/:username/location', function($username) use ($app) {
-    $user = \OTW\Models\Users\User::fromApiKey(
-        $app->request()->headers('Authorization')
+    $user = \OTW\Models\Users\User::authenticateApiKey(
+        $app->request()->headers('Authorization'),
+        $username
     );
 
-    if ($user && strcmp($user->getUsername(), $username) == 0) {
+    if ($user) {
         $app->render(200, array(
             'lastReportedLocations' =>
                 \OTW\Models\Location\ReportedLocation::all($username, true)

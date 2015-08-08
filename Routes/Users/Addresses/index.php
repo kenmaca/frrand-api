@@ -2,11 +2,12 @@
 
 // GET /users/addresses: lists all addresses on file for the given user
 $app->get('/users/:username/addresses', function($username) use ($app) {
-    $user = \OTW\Models\Users\User::fromApiKey(
-        $app->request()->headers('Authorization')
+    $user = \OTW\Models\Users\User::authenticateApiKey(
+        $app->request()->headers('Authorization'),
+        $username
     );
 
-    if ($user && strcmp($user->getUsername(), $username) == 0) {
+    if ($user) {
         $app->render(200, array(
             'addresses' => $user->getAddresses()
         ));

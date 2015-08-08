@@ -118,6 +118,19 @@ class User extends \OTW\Models\MongoObject
     }
 
     /**
+     * Authenticates an API key with an username.
+     *
+     * @param string The API key
+     * @param string The username
+     *
+     * @return User
+     */
+    public static function authenticateApiKey($apiKey, $username) {
+        $user = self::fromApiKey($apiKey);
+        return (strcmp($user->getUsername(), $username) == 0) ? $user : null;
+    }
+
+    /**
      * Obtains a corresponding User from the provided username from
      * MongoDB.
      *
