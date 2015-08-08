@@ -1,18 +1,44 @@
 <?php namespace OTW\Models;
 
 // server credentials
-define('OTW\Models\MONGO_SERVER', 'mongodb://otw:Triangular@localhost:27017/OTW');
+define(
+    'OTW\Models\MONGO_SERVER', 
+    'mongodb://otw:Triangular@localhost:27017/OTW'
+);
 
+/**
+ * A base class for objects that are stored in MongoDB.
+ */
 abstract class MongoObject
 {
+
+    // a direct 1-to-1 with the document stored in MongoDB
     protected $data;
+
+    // a MongoDB collection that stores this document
     protected $dataSource;
 
+    
+    /**
+     * Creates a new MongoObject with the given document and collection.
+     *
+     * @param array|boolean A 1-to-1 representation of this Document in MongoDB
+     * @param MongoCollection|boolean The collection that this Document belongs 
+     * to
+     */
     public function __construct($json = false, $dataSource = false) {
         if ($json) $this->data = $json;
         if ($dataSource) $this->dataSource = $dataSource;
     }
 
+    /**
+     * Updates the Document in MongoDB where the value of $key matches the
+     * value of $key in this MongoObject's data array.
+     *
+     * @param mixed An unique attribute of this MongoObject to update by
+     *
+     * @return MongoObject
+     */
     public function push($key) {
         if ($this->dataSource) {
 
@@ -32,6 +58,12 @@ abstract class MongoObject
         return $this;
     }
 
+    /**
+     * Represents this MongoObject as an array (generally for use as a JSON
+     * string.
+     *
+     * @return array
+     */
     public function asJson() {
         return $this->data;
     }

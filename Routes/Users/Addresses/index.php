@@ -6,9 +6,9 @@ $app->get('/users/:username/addresses', function($username) use ($app) {
         $app->request()->headers('Authorization')
     );
 
-    if ($user && strcmp($user[0]->getUsername(), $username) == 0) {
+    if ($user && strcmp($user->getUsername(), $username) == 0) {
         $app->render(200, array(
-            'addresses' => $user[0]->getAddresses()
+            'addresses' => $user->getAddresses()
         ));
     } else {
         $app->render(403, array(

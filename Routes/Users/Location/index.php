@@ -6,7 +6,9 @@ $app->post('/users/:username/location', function($username) use ($app) {
         $app->request()->headers('Authorization')
     );
 
-    if ($user && strcmp($user[0]->getUsername(), $username) == 0) {
+    if ($user && strcmp($user->getUsername(), $username) == 0) {
+
+        // log current location for User with $username
         $location = \OTW\Models\Location\ReportedLocation::report(
             (float)$app->request()->post('longitude'),
             (float)$app->request()->post('latitude'),
@@ -28,7 +30,7 @@ $app->get('/users/:username/location', function($username) use ($app) {
         $app->request()->headers('Authorization')
     );
 
-    if ($user && strcmp($user[0]->getUsername(), $username) == 0) {
+    if ($user && strcmp($user->getUsername(), $username) == 0) {
         $app->render(200, array(
             'lastReportedLocations' =>
                 \OTW\Models\Location\ReportedLocation::all($username, true)
