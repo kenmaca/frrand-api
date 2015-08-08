@@ -23,28 +23,27 @@ class User extends \OTW\Models\MongoObject
         return $this->push(USER_KEY);
     }
 
-    public function addAddress($street, $city, $region, $country, $postal,
+    public function getAddresses() {
+        return $this->data['addresses'];
+    }
+
+    public function addAddress($name, $street, $city, $region, $country, $postal,
         $unit = NULL
     ) {
-        if (\array_key_exists('addresses', $this->data)) {
-            $this->data['addresses'][] = array(
-                'street' => $street,
-                'city' => $city,
-                'region' => $region,
-                'country' => $country,
-                'postal' => $postal,
-                'unit' => $unit
-            );
-        } else {
-            $this->data['addresses'] = array(array(
-                'street' => $street,
-                'city' => $city,
-                'region' => $region,
-                'country' => $country,
-                'postal' => $postal,
-                'unit' => $unit
-            ));
+        if (!\array_key_exists('addresses', $this->data)) {
+            $this->data['addresses'] = array();
         }
+
+        $this->data['addresses'][$name] = array(
+            'street' => $street,
+            'city' => $city,
+            'region' => $region,
+            'country' => $country,
+            'postal' => $postal,
+            'unit' => $unit,
+            'created' => new \MongoDate(),
+            'updated' => new \MongoDate()
+        );
 
         return $this->update();
     }
@@ -84,7 +83,8 @@ class User extends \OTW\Models\MongoObject
         if (!self::exists($username)) {
             $user = new User(array(
                 'username' => (string)$username,
-                'password' => (string)$password
+                'password' => (string)$password,
+                'created' => new \MongoDate(),
             ));
 
             $user->update();

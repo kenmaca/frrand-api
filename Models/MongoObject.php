@@ -15,6 +15,11 @@ abstract class MongoObject
 
     public function push($key) {
         if ($this->dataSource) {
+
+            // update last updated time
+            $this->data['updated'] = new \MongoDate();
+
+            // commit the changes from data
             $this->dataSource->update(array(
                $key => $this->data[$key]
             ), array(
@@ -25,6 +30,10 @@ abstract class MongoObject
         }
 
         return $this;
+    }
+
+    public function asJson() {
+        return $this->data;
     }
 
     /**
@@ -44,7 +53,7 @@ abstract class MongoObject
 
         foreach ($mongoQuery as $mongoData) {
             $mongoObj = new $mongoFactory($mongoData, $dataSource);
-            $mongoObjs[] = $asJson ? $mongoObj->data : $mongoObj;
+            $mongoObjs[] = $asJson ? $mongoObj->asJson() : $mongoObj;
         }
 
         return $mongoObjs;
