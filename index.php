@@ -24,6 +24,7 @@ $app->config('debug', true);
 // Setup Routes
 include __DIR__ . '/Routes/Users/index.php';
 include __DIR__ . '/Routes/Users/Location/index.php';
+include __DIR__ . '/Routes/Users/Location/Routes/index.php';
 include __DIR__ . '/Routes/Users/Addresses/index.php';
 include __DIR__ . '/Routes/Login/index.php';
 

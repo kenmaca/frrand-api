@@ -42,6 +42,33 @@ class ReportedLocation extends \OTW\Models\MongoObject
     }
 
     /**
+     * Gets the longitude of this ReportedLocation.
+     *
+     * @return float
+     */
+    public function getLong() {
+        return $this->data['loc']['coordinates'][0];
+    }
+
+    /**
+     * Gets the latitude of this ReportedLocation.
+     *
+     * @return float
+     */
+    public function getLat() {
+        return $this->data['loc']['coordinates'][1];
+    }
+
+    /**
+     * Gets the times that this ReportedLocation was reported.
+     *
+     * @return array
+     */
+    public function getReported() {
+        return $this->data['reported'];
+    }
+
+    /**
      * Finds any previously ReportedLocations for the given User with
      * $username is within POINT_ACCURACY meters away from the given
      * $longitude and $latitude.
@@ -71,18 +98,30 @@ class ReportedLocation extends \OTW\Models\MongoObject
     }
 
     /**
-     * Gets all ReportedLocations for a given User with $username.
+     * Gets all ReportedLocations for a given User with $username between
+     * $startDate and $endDate.
      *
      * @param string The username
-     * @param boolean Whether to return each ReportedLocation as an array
+     * @param MongoDate The start date
+     * @param MongoDate The end date
      *
      * @return array
      */
-    public static function all($username = null, $asJson = false) {
-        return self::find(
-            ($username ? array('username' => $username) : array()),
-            $asJson
-        );
+    public static function all($username = null, $startTime = null, 
+        $endTime = null, $asJson = false
+    ) {
+        $query = ($username ? array('username' => $username) : array());
+        if ($startTime || $endTime) {
+            $query['reported'] = array('$elemMatch' => array());
+            if ($startTime) {
+                $query['reported']['$elemMatch']['$gte'] = $startTime;
+            }
+            if ($endTime) {
+                $query['reported']['$elemMatch']['$lt'] = $endTime;
+            }
+        }
+
+        return self::find($query, $asJson);
     }
 
     /**
