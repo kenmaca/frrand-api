@@ -1,8 +1,9 @@
 <?php namespace OTW\Models\Location;
 
 // the distance (in meters) between points reportable
-define('POINT_ACCURACY', 10);
-define('LOCATION_KEY', 'loc');
+define('OTW\Models\Location\POINT_ACCURACY', 50);
+define('OTW\Models\Location\LOCATION_KEY', 'loc');
+define('OTW\Models\Location\STATIONARY_LIMIT', 3);
 
 /**
  * A representation of a Reported Location for an User.
@@ -57,6 +58,44 @@ class ReportedLocation extends \OTW\Models\MongoObject
      */
     public function getLat() {
         return $this->data['loc']['coordinates'][1];
+    }
+
+    /**
+     * Gets the time that this ReportedLocation was last reported.
+     *
+     * @return MongoDate
+     */
+    public function getLastReported() {
+        return end($this->getReported());
+    }
+
+    /**
+     * Determines whether or not this ReportedLocation was stationary,
+     * or in other words: was reported at least STATIONARY_LIMIT times
+     * in the same hour.
+     *
+     * @return boolean
+     */
+    public function isCurrentlyStationary() {
+        $lastReported = $this->getLastReported()->toDateTime()->format('YmdG');
+        $previousNReported = array_slice(
+            $this->data['reported'],
+            -STATIONARY_LIMIT
+        );
+
+        if (count($previousNReported) == STATIONARY_LIMIT) {
+            foreach($previousNReported as $timeReported) {
+                if ($lastReported != $timeReported
+                    ->toDateTime()->format('YmdG')
+                ) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -158,23 +197,23 @@ class ReportedLocation extends \OTW\Models\MongoObject
             $location = $location[0];
             $location->incrementReportedCount();
 
-        // never been reported, so create new Location
-        } else {
+        // never been reported, so create new Location if the user exists
+        } else if (\OTW\Models\Users\User::exists($username)) {
+            $location = new ReportedLocation(array(
+                'username' => $username,
+                'reported' => array(new \MongoDate()),
+                'loc' => array(
+                    'type' => 'Point',
+                    'coordinates' => array($longitude, $latitude)
+                )
+            ));
 
-            // only log Location if the user exists
-            if (\OTW\Models\Users\User::exists($username)) {
-                $location = new ReportedLocation(array(
-                    'username' => $username,
-                    'reported' => array(new \MongoDate()),
-                    'loc' => array(
-                        'type' => 'Point',
-                        'coordinates' => array($longitude, $latitude)
-                    ),
-                    'created' => new \MongoDate()
-                ));
+            $location->update();
+        }
 
-                $location->update();
-            }
+        // add to ReportedLocationGrid if stationary
+        if ($location && $location->isCurrentlyStationary()) {
+            ReportedLocationGrid::get($username)->insert($location);
         }
 
         return $location;

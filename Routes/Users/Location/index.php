@@ -33,9 +33,12 @@ $app->get('/users/:username/location', function($username) use ($app) {
     );
 
     if ($user) {
+        $lastReportedLocations = \OTW\Models\Location\ReportedLocation::all(
+            $username, null, null, true
+        );
+
         $app->render(200, array(
-            'lastReportedLocations' =>
-                \OTW\Models\Location\ReportedLocation::all($username, null, null, true)
+            'lastReportedLocations' => $lastReportedLocations
         ));
     } else {
         $app->render(403, array(

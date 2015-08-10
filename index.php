@@ -15,6 +15,9 @@ spl_autoload_register(function ($className) {
     return false;
 });
 
+// PHP Settings
+date_default_timezone_set('America/Toronto');
+
 // Slim API
 $app = new \Slim\Slim();
 $app->view(new \JsonApiView());
@@ -25,6 +28,7 @@ $app->config('debug', true);
 include __DIR__ . '/Routes/Users/index.php';
 include __DIR__ . '/Routes/Users/Location/index.php';
 include __DIR__ . '/Routes/Users/Location/Routes/index.php';
+include __DIR__ . '/Routes/Users/Location/Grid/index.php';
 include __DIR__ . '/Routes/Users/Addresses/index.php';
 include __DIR__ . '/Routes/Login/index.php';
 

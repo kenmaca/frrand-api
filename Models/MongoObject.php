@@ -55,7 +55,16 @@ abstract class MongoObject
             ));
         }
 
-        return $this;
+        // retrieve a copy directly from MongoDB (for newly created documents)
+        // wasteful, but guarantees that we have a fresh copy
+        foreach($this->dataSource->find(array(
+            $key => $this->data[$key]
+        )) as $mongoData) {
+
+            // assuming the $key is unique, exit on the first one found
+            $this->data = $mongoData;
+            return $this;
+        }
     }
 
     /**
@@ -66,6 +75,15 @@ abstract class MongoObject
      */
     public function asJson() {
         return $this->data;
+    }
+
+    /**
+     * Gets the unique ID for this MongoObject.
+     *
+     * @return string
+     */
+    public function getObjectId() {
+        return (string)$this->data['_id'];
     }
 
     /**

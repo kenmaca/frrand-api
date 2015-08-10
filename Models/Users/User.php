@@ -1,17 +1,18 @@
 <?php namespace OTW\Models\Users;
 
 // the designated user field to mark as an unique identifier
-define('USER_KEY', 'username');
+define('OTW\Models\Users\USER_KEY', 'username');
 
 /**
  * A representation of an User.
  */
-class User extends \OTW\Models\MongoObject
+class User extends \OTW\Models\MongoObject implements GCMSender
 {
 
     // a single copy of the Collection used for all Users
     // to avoid creating multiple wasteful connections
     public static $mongoDataSource;
+    public static $gcmSenderService;
 
     /**
      * Constructs an User.
@@ -71,8 +72,8 @@ class User extends \OTW\Models\MongoObject
      *
      * @return User
      */
-    public function addAddress($name, $street, $city, $region, $country, $postal,
-        $unit = null
+    public function addAddress($name, $street, $city, $region, $country, 
+        $postal, $unit = null
     ) {
         if (!\array_key_exists('addresses', $this->data)) {
             $this->data['addresses'] = array();
@@ -93,14 +94,99 @@ class User extends \OTW\Models\MongoObject
     }
 
     /**
-     * Sets a new API key for this User.
+     * Gets the most recent gcmInstanceId for this User.
+     *
+     * @return string
+     */
+    public function getLastGcmInstanceId() {
+        reset($this->data['apiKeys']);
+        return $this->getGcmInstanceIdFromApiKey(key($this->data['apiKeys']));
+    }
+
+    /**
+     * Gets the gcmInstanceId associated with the given apiKey.
      *
      * @param string The API key
      *
+     * @return string
+     */
+    public function getGcmInstanceIdFromApiKey($apiKey) {
+        return $this->data['apiKeys'][$apiKey]['gcmInstanceId'];
+    }
+
+    /**
+     * Sets a new API key for this User.
+     *
+     * @param string The API key
+     * @param string The InstanceID from the Device requesting API access
+     *
      * @return User
      */
-    public function addApiKey($key) {
-        $this->data['apiKey'] = $key;
+    public function addApiKey($apiKey, $gcmInstanceId = null) {
+        $this->data['apiKeys'][$apiKey] = array(
+            'created' => new \MongoDate(),
+            'lastUsed' => new \MongoDate(),
+            'gcmInstanceId' => $gcmInstanceId
+        );
+
+        $this->pruneApiKeys();
+        return $this->useApiKey($apiKey);
+    }
+
+    /**
+     * Prunes the API Key array for older duplicate keys and maintains
+     * a unique apiKey-to-gcmInstanceId pairing.
+     *
+     * @return User
+     */
+    public function pruneApiKeys() {
+
+        // instanceId => apiKey
+        $instanceIds = array();
+
+        foreach($this->data['apiKeys'] as $apiKey => $keyData) {
+            if (array_key_exists($keyData['gcmInstanceId'], $instanceIds)) {
+                if ($keyData['created'] > $this->data['apiKeys'][
+                    $instanceIds[$keyData['gcmInstanceId']]
+                ]['created']) {
+
+                    // instanceId was seen already, remove older one
+                    unset($this->data['apiKeys'][
+                        $instanceIds[$keyData['gcmInstanceId']]
+                    ]);
+                    $instanceIds[$keyData['gcmInstanceId']] = $apiKey;
+                } else {
+
+                    // current instanceId is old, so remove it
+                    unset($this->data['apiKeys'][$apiKey]);
+                }
+            } else {
+
+                // never tracked, so good to go
+                $instanceIds[$keyData['gcmInstanceId']] = $apiKey;
+            }
+        }
+        return $this->update();
+    }
+
+    /**
+     * Updates an API Key with the time it was last used and pushes the
+     * select $apiKey to the front (maintaining frequently accessed keys
+     * appearing at the front of the array).
+     *
+     * @return User
+     */
+    public function useApiKey($apiKey) {
+
+        // update lastUsed
+        $apiKeyObject = $this->data['apiKeys'][$apiKey];
+        $apiKeyObject['lastUsed'] = new \MongoDate();
+
+        // push to front
+        $this->data['apiKeys'] = (array($apiKey => $apiKeyObject)
+            + $this->data['apiKeys']
+        );
+
         return $this->update();
     }
 
@@ -113,8 +199,14 @@ class User extends \OTW\Models\MongoObject
      * @return User
      */
     public static function fromApiKey($apiKey) {
-        $user = self::find(array('apiKey' => $apiKey));
-        return $user[0];
+        $user = self::find(array(
+            'apiKeys.' . $apiKey => array(
+                '$exists' => true
+            )
+        ));
+
+        // update lastUsed
+        if ($user) return $user[0]->useApiKey($apiKey);
     }
 
     /**
@@ -127,7 +219,36 @@ class User extends \OTW\Models\MongoObject
      */
     public static function authenticateApiKey($apiKey, $username) {
         $user = self::fromApiKey($apiKey);
-        return (strcmp($user->getUsername(), $username) == 0) ? $user : null;
+        if ($user) {
+
+            // check if $apiKey matches with $username
+            return (strcmp($user->getUsername(), $username) == 0)
+                ? $user : null;
+        }
+    }
+
+    /**
+     * Sends a message to this User's last known device, returns
+     * true if it was successful, and false otherwise.
+     *
+     * @param array The message payload
+     *
+     * @return bool
+     */
+    public function gcmSend($payload, $collapseKey = '', $apiKey = null) {
+        $gcmInstanceId = ($apiKey
+            ? $this->getGcmInstanceIdFromApiKey($apiKey)
+            : $this->getLastGcmInstanceId()
+        );
+
+        $message = new \PHP_GCM\Message($collapseKey, $payload);
+
+        try {
+            $result = self::$gcmSenderService->send($message, $gcmInstanceId, 3);
+            return $result->getErrorCode() ? false : true;
+        } catch(\Exception $e) {
+            return false;
+        }
     }
 
     /**
@@ -178,8 +299,7 @@ class User extends \OTW\Models\MongoObject
         if (!self::exists($username)) {
             $user = new User(array(
                 'username' => (string)$username,
-                'password' => (string)$password,
-                'created' => new \MongoDate(),
+                'password' => (string)$password
             ));
 
             $user->update();
@@ -193,5 +313,7 @@ class User extends \OTW\Models\MongoObject
 // Initialize static instance of MongoDB connection
 $mongo = new \MongoClient(\OTW\Models\MONGO_SERVER);
 User::$mongoDataSource = $mongo->OTW->Users;
+$gcmSender = new \PHP_GCM\Sender('AIzaSyAfX_qmGNE4t_9Rp5fGOdyp-QKSnEyzbIw');
+User::$gcmSenderService = $gcmSender;
 
 ?>
