@@ -1,4 +1,4 @@
-# OTW API
+# OTW RESTful API
 ## Notes
 Striked out items indicate soon-to-be-depreciated items and should be removed/changed ASAP.
 
