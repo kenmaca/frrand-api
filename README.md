@@ -44,7 +44,7 @@ None
 * users: `[an user, ..]`
 
 ## Location
-### Logs a Current Location: POST /users/`username`/location
+### Logs a Current Location: POST http://otw.kenma.ca/users/`username`/location
 #### Headers
 * Authorization: `apiKey for username`
 
@@ -59,7 +59,7 @@ None
 ##### Failure: 403
 * msg: "API Key is unauthorized to modify `username`"
 
-### Gets all Reported Locations for an User: GET /users/`username`/location
+### Gets all Reported Locations for an User: GET http://otw.kenma.ca/users/`username`/location
 #### Headers
 * Authorization: `apiKey for username`
 
@@ -70,7 +70,7 @@ None
 ##### Failure: 403
 * msg: "API Key is unauthorized to access `username`"
 
-### Gets the Route an User travelled through a certain period: GET /users/`username`/location/routes/`start time`/`end time`
+### Gets the Route an User travelled through a certain period: GET http://otw.kenma.ca/users/`username`/location/routes/`start time`/`end time`
 #### Headers
 * Authorization: `apiKey for username`
 
@@ -85,7 +85,7 @@ None
 ##### Failure: 403
 * msg: "API Key is unauthorized to access `username`
 
-### Gets a Grid of all Stationary Locations for an User: GET /users/`username`/location/grid
+### Gets a Grid of all Stationary Locations for an User: GET http://otw.kenma.ca/users/`username`/location/grid
 #### Headers
 * Authorization: `apiKey for username`
 
