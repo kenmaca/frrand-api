@@ -13,8 +13,7 @@ Striked out items indicate soon-to-be-depreciated items and should be removed/ch
 #### Returns
 ##### Success: 200
 * ~~apiToken: `an assigned API key`~~
-###### GCM
-* apiKey: `an assigned API key`
+* **Via GCM** apiKey: `an assigned API key`
 
 ##### Failure: 401
 None
