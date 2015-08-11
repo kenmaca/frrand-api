@@ -313,7 +313,7 @@ class User extends \OTW\Models\MongoObject implements GCMSender
 // Initialize static instance of MongoDB connection
 $mongo = new \MongoClient(\OTW\Models\MONGO_SERVER);
 User::$mongoDataSource = $mongo->OTW->Users;
-$gcmSender = new \PHP_GCM\Sender('AIzaSyAfX_qmGNE4t_9Rp5fGOdyp-QKSnEyzbIw');
+$gcmSender = new \PHP_GCM\Sender('AIzaSyB9rK2MlUy5IR_Ilfpybjq-sECRowkHhf4');
 User::$gcmSenderService = $gcmSender;
 
 ?>
