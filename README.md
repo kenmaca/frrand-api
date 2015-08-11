@@ -10,8 +10,9 @@
 
 * username: {{ a unique username }}
 * password: {{ password }}
+* gcmInstanceId: {{ instance id for GCM }}
 
-#### Returns (via JSON)
+#### Returns (via JSON/GCM)
 
 * apiToken: {{ an assigned API key }}
 
