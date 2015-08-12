@@ -13,6 +13,7 @@ Striked out items indicate soon-to-be-depreciated items and should be removed/ch
 #### Returns
 ##### Success: 200
 * **Via GCM** apiKey: `an assigned API key`
+* **Via GCM** type: "apiKey"
 
 ##### Failure: 400
 * msg: 'Provided gcmInstanceId is faulty'
@@ -119,3 +120,25 @@ None
 
 ##### Failure: 403
 * msg: "API Key is unauthorized to access `username`
+
+## Development Use
+### Send an GCM: POST http://otw.kenma.ca/gcm
+#### Notes
+For developmental use only and will be disabled during production. Do not implement using this interface.
+
+#### Headers
+* Authorization: `apiKey for username`
+
+#### Variables
+All variables are piped directly to GCM.
+
+#### Returns
+##### Success: 200
+* sent: `{key: value, ..}`
+* sentTo: `gcmInstanceId associated to provided apiKey`
+
+##### Failure: 400
+* msg: "Associated gcmInstanceId is faulty
+
+##### Failure: 403
+* msg: "API Key is unauthorized"
