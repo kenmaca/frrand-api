@@ -16,10 +16,10 @@ Striked out items indicate soon-to-be-depreciated items and should be removed/ch
 * **Via GCM** type: "apiKey"
 
 ##### Failure: 400
-* msg: 'Provided gcmInstanceId is faulty'
+* msg: "Provided gcmInstanceId is faulty"
 
 ##### Failure: 401
-* msg: 'Authentication failed'
+* msg: "Authentication failed"
 
 ### Renew gcmInstanceId: POST http://otw.kenma.ca/login/renew
 #### Headers
@@ -138,7 +138,7 @@ All variables are piped directly to GCM.
 * sentTo: `gcmInstanceId associated to provided apiKey`
 
 ##### Failure: 400
-* msg: "Associated gcmInstanceId is faulty
+* msg: "Associated gcmInstanceId is faulty"
 
 ##### Failure: 403
 * msg: "API Key is unauthorized"
