@@ -13,22 +13,13 @@ $app->post('/login', function () use ($app) {
 
         // generate a temporary api key and link to user
         $apiKey = \base_convert(md5(rand()), 16, 36);
-        $users[0]->addApiKey(
+        if (!$users[0]->addApiKey(
             $apiKey,
-            $app->request()->post('gcmInstanceId')
-                ? (string)$app->request()->post('gcmInstanceId') : null
-        );
-
-        // send apiKey via GCM or JSON if gcmSend failed
-        if (!$users[0]->gcmSend(
-            array('apiToken' => $apiKey),
-            '',
-            $apiKey
-
-        // if gcmSend failed.. fallback to JSON (need to remove)
+            (string)$app->request()->post('gcmInstanceId')
         )) {
-            $app->render(200, array(
-                'apiToken' => $apiKey,
+            $app->render(400, array(
+                'error' => true,
+                'msg' => 'Provided gcmInstanceId is faulty'
             ));
         } else {
             $app->render(200, array());

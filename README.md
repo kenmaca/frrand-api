@@ -4,7 +4,7 @@ Striked out items indicate soon-to-be-depreciated items and should be removed/ch
 
 ## Login
 
-### Login: GET http://otw.kenma.ca/login
+### Login: POST http://otw.kenma.ca/login
 #### Variables
 * username: `a unique username`
 * password: `password`
@@ -12,11 +12,30 @@ Striked out items indicate soon-to-be-depreciated items and should be removed/ch
 
 #### Returns
 ##### Success: 200
-* ~~apiToken: `an assigned API key`~~
 * **Via GCM** apiKey: `an assigned API key`
 
+##### Failure: 400
+* msg: 'Provided gcmInstanceId is faulty'
+
 ##### Failure: 401
+* msg: 'Authentication failed'
+
+### Renew gcmInstanceId: POST http://otw.kenma.ca/login/renew
+#### Headers
+* Authorization: `apiKey`
+
+#### Variables
+* gcmInstanceId: `gcmInstanceId linked to apiKey`
+
+#### Returns
+##### Success: 200
 None
+
+##### Failure: 400
+* msg: "Provided gcmInstanceId is faulty"
+
+##### Failure: 403
+* msg: "API Key is unauthorized"
 
 ## Users
 
@@ -39,6 +58,9 @@ None
 * msg: "User already exists"
 
 ### Gets all Users: GET http://otw.kenma.ca/users
+#### Notes
+For developmental use only and will be disabled during production. Do not implement using this interface.
+
 #### Returns
 ##### Success: 200
 * users: `[an user, ..]`

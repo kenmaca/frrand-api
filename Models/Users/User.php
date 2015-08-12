@@ -111,7 +111,11 @@ class User extends \OTW\Models\MongoObject implements GCMSender
      * @return string
      */
     public function getGcmInstanceIdFromApiKey($apiKey) {
-        return $this->data['apiKeys'][$apiKey]['gcmInstanceId'];
+        if (array_key_exists($apiKey, $this->data['apiKeys'])) {
+            return $this->data['apiKeys'][$apiKey]['gcmInstanceId'];
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -120,17 +124,46 @@ class User extends \OTW\Models\MongoObject implements GCMSender
      * @param string The API key
      * @param string The InstanceID from the Device requesting API access
      *
-     * @return User
+     * @return boolean
      */
-    public function addApiKey($apiKey, $gcmInstanceId = null) {
+    public function addApiKey($apiKey, $gcmInstanceId) {
+
+        // keep track of original gcmInstanceId in case of fallback
+        $originalGcmInstanceId = $this->getGcmInstanceIdFromApiKey($apiKey);
+        $usingFallBack = false;
+
         $this->data['apiKeys'][$apiKey] = array(
             'created' => new \MongoDate(),
             'lastUsed' => new \MongoDate(),
             'gcmInstanceId' => $gcmInstanceId
         );
 
+        // attempt to send apiKey via gcm and if faulty then fallback
+        if (!$this->gcmSend(
+            array(
+                'apiKey' => $apiKey
+            ), '', $apiKey)
+        ) {
+
+            // we have an original gcmInstanceId to fall back to
+            if ($originalGcmInstanceId) {
+                $this->data['apiKeys'][$apiKey]['gcmInstanceId'] =
+                    $originalGcmInstanceId;
+                $usingFallBack = true;
+
+            // simply remove the key if gcm failed
+            } else {
+                unset($this->data['apiKeys'][$apiKey]);
+            }   
+        }
+
         $this->pruneApiKeys();
-        return $this->useApiKey($apiKey);
+        if ($this->getGcmInstanceIdFromApiKey($apiKey) && !$usingFallBack) {
+            $this->useApiKey($apiKey);
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -146,9 +179,9 @@ class User extends \OTW\Models\MongoObject implements GCMSender
 
         foreach($this->data['apiKeys'] as $apiKey => $keyData) {
             if (array_key_exists($keyData['gcmInstanceId'], $instanceIds)) {
-                if ($keyData['created'] > $this->data['apiKeys'][
+                if ($keyData['lastUsed'] > $this->data['apiKeys'][
                     $instanceIds[$keyData['gcmInstanceId']]
-                ]['created']) {
+                ]['lastUsed']) {
 
                     // instanceId was seen already, remove older one
                     unset($this->data['apiKeys'][
@@ -313,7 +346,7 @@ class User extends \OTW\Models\MongoObject implements GCMSender
 // Initialize static instance of MongoDB connection
 $mongo = new \MongoClient(\OTW\Models\MONGO_SERVER);
 User::$mongoDataSource = $mongo->OTW->Users;
-$gcmSender = new \PHP_GCM\Sender('AIzaSyB9rK2MlUy5IR_Ilfpybjq-sECRowkHhf4');
+$gcmSender = new \PHP_GCM\Sender('AIzaSyCvJlZQUf1fEEi0812f_-yNQptbra9IRts');
 User::$gcmSenderService = $gcmSender;
 
 ?>

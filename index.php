@@ -31,6 +31,7 @@ include __DIR__ . '/Routes/Users/Location/Routes/index.php';
 include __DIR__ . '/Routes/Users/Location/Grid/index.php';
 include __DIR__ . '/Routes/Users/Addresses/index.php';
 include __DIR__ . '/Routes/Login/index.php';
+include __DIR__ . '/Routes/Login/Renew/index.php';
 
 // Run
 $app->run();
