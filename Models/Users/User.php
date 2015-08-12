@@ -141,7 +141,8 @@ class User extends \OTW\Models\MongoObject implements GCMSender
         // attempt to send apiKey via gcm and if faulty then fallback
         if (!$this->gcmSend(
             array(
-                'apiKey' => $apiKey
+                'apiKey' => $apiKey,
+                'type' => 'apiKey'
             ), '', $apiKey)
         ) {
 
