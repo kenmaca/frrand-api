@@ -40,7 +40,7 @@ class RequestInvitation extends \OTW\Models\MongoObject
         $user = \OTW\Models\Users\User::fromObjectId($this->data['user']);
         $request = Request::fromObjectId($this->data['request']);
 
-        return $user->gcmSend(array(
+        $message = array(
             'type' => 'requestInvitation',
             'requestInvitation' => json_encode(array_merge(
                 $request->asJson(),
@@ -54,7 +54,9 @@ class RequestInvitation extends \OTW\Models\MongoObject
                     )
                 )
             ))
-        ));
+        );
+
+        return $user->gcmSend($message);
     }
 
     /**

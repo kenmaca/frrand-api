@@ -134,7 +134,7 @@ None
 #### Returns
 ##### Success: 201
 * **Via GCM to all Users** type: `requestInvitation`
-* **Via GCM to all Users** requestInvitation: `{"items": itemsArray, "places": placesArray, "requesterLocation": {"type": "Point", "coordinates": [0, 0]}}`
+* **Via GCM to all Users** requestInvitation: `{"items": itemsArray, "places": placesArray, "requesterLocation": {"type": "Point", "coordinates": [0, 0]}, "username": username, "requestedTime": {"sec": 0, "usec": 0}, "updated": {"sec": 0, "usec": 0}, "_id": {"$id": requestInvitationId}}}`
 
 ##### Failure: 400
 * msg: "Unable to create a new Request"
