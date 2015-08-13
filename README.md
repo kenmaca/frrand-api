@@ -121,6 +121,27 @@ None
 ##### Failure: 403
 * msg: "API Key is unauthorized to access `username`
 
+## Requests
+### Create a new Request: POST http://otw.kenma.ca/users/{username}/requests
+#### Headers
+* Authorization: `apiKey for username`
+
+#### Variables
+* items: `[{"name": itemName, "description": itemDescription, "quantity": 1, "price": 1.00}, ..]`
+* places: `[{"name": placeName, "address": {"address": placeAddress, "city": placeCity, "region": placeRegion, "country": placeCountry, "postal": placePostal, "unit": placeUnit, "phone": placePhone}, ..]`
+* requestedTime: `any datetime formatted string`
+
+#### Returns
+##### Success: 201
+* **Via GCM to all Users** type: `requestInvitation`
+* **Via GCM to all Users** requestInvitation: `{"items": itemsArray, "places": placesArray, "requesterLocation": {"type": "Point", "coordinates": [0, 0]}}`
+
+##### Failure: 400
+* msg: "Unable to create a new Request"
+
+##### Failure: 403
+* msg: "API Key is unauthorized to modify `username`"
+
 ## Development Use
 ### Send an GCM: POST http://otw.kenma.ca/gcm
 #### Notes

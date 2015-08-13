@@ -39,7 +39,7 @@ abstract class MongoObject
      *
      * @return MongoObject
      */
-    public function push($key) {
+    public function push($key = '_id') {
         if ($this->dataSource) {
 
             // update last updated time

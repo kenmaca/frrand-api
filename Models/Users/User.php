@@ -128,6 +128,11 @@ class User extends \OTW\Models\MongoObject implements GCMSender
      */
     public function addApiKey($apiKey, $gcmInstanceId) {
 
+        // initialize apiKeys
+        if (!array_key_exists('apiKeys', $this->data)) {
+            $this->data['apiKeys'] = array();
+        }
+
         // keep track of original gcmInstanceId in case of fallback
         $originalGcmInstanceId = $this->getGcmInstanceIdFromApiKey($apiKey);
         $usingFallBack = false;
@@ -310,6 +315,18 @@ class User extends \OTW\Models\MongoObject implements GCMSender
     }
 
     /**
+     * Gets an User by its ObjectId.
+     *
+     * @param string The ObjectId string
+     *
+     * @return User
+     */
+    public static function fromObjectId($objectId) {
+        $user = self::find(array('_id' => new \MongoId($objectId)));
+        return $user[0];
+    }
+
+    /**
      * Finds an User with attributes matching the $query array.
      *
      * @param array The query array to search with
@@ -333,7 +350,8 @@ class User extends \OTW\Models\MongoObject implements GCMSender
         if (!self::exists($username)) {
             $user = new User(array(
                 'username' => (string)$username,
-                'password' => (string)$password
+                'password' => (string)$password,
+                'apiKeys' => array()
             ));
 
             $user->update();
