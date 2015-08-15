@@ -1,0 +1,227 @@
+<?php namespace OTW\Models\Location;
+
+// the distance (in meters) between points reportable
+define('OTW\Models\Location\POINT_ACCURACY', 50);
+define('OTW\Models\Location\LOCATION_KEY', 'loc');
+define('OTW\Models\Location\STATIONARY_LIMIT', 3);
+
+/**
+ * A representation of a Reported Location for an User.
+ */
+class ReportedLocation extends \OTW\Models\MongoObject
+{
+    // a single copy of the Collection used for all ReportedLocations
+    // to avoid creating multiple wasteful connections
+    public static $mongoDataSource;
+
+    /**
+     * Constructs a ReportedLocation.
+     *
+     * @param array A 1-to-1 representation of this ReportedLocation in MongoDB
+     */
+    public function __construct($json) {
+        parent::__construct($json, self::$mongoDataSource);
+    }
+
+    /**
+     * Updates this ReportedLocation in MongoDB with any changes made.
+     *
+     * @return ReportedLocation
+     */
+    public function update() {
+        return $this->push(LOCATION_KEY);
+    }
+
+    /**
+     * Increments the times that this ReportedLocation has been reported.
+     *
+     * @return ReportedLocation
+     */
+    public function incrementReportedCount() {
+        $this->data['reported'][] = new \MongoDate();
+        return $this->update();
+    }
+
+    /**
+     * Gets the longitude of this ReportedLocation.
+     *
+     * @return float
+     */
+    public function getLong() {
+        return $this->data['loc']['coordinates'][0];
+    }
+
+    /**
+     * Gets the latitude of this ReportedLocation.
+     *
+     * @return float
+     */
+    public function getLat() {
+        return $this->data['loc']['coordinates'][1];
+    }
+
+    /**
+     * Gets the time that this ReportedLocation was last reported.
+     *
+     * @return MongoDate
+     */
+    public function getLastReported() {
+        return end($this->getReported());
+    }
+
+    /**
+     * Determines whether or not this ReportedLocation was stationary,
+     * or in other words: was reported at least STATIONARY_LIMIT times
+     * in the same hour.
+     *
+     * @return boolean
+     */
+    public function isCurrentlyStationary() {
+        $lastReported = $this->getLastReported()->toDateTime()->format('YmdG');
+        $previousNReported = array_slice(
+            $this->data['reported'],
+            -STATIONARY_LIMIT
+        );
+
+        if (count($previousNReported) == STATIONARY_LIMIT) {
+            foreach($previousNReported as $timeReported) {
+                if ($lastReported != $timeReported
+                    ->toDateTime()->format('YmdG')
+                ) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Gets the times that this ReportedLocation was reported.
+     *
+     * @return array
+     */
+    public function getReported() {
+        return $this->data['reported'];
+    }
+
+    /**
+     * Finds any previously ReportedLocations for the given User with
+     * $username is within POINT_ACCURACY meters away from the given
+     * $longitude and $latitude.
+     *
+     * @param float The longitude of a given point
+     * @param float The latitude of a given point
+     * @param string The username to look for or null to search all
+     * ReportedLocations in MongoDB
+     *
+     * @return array
+     */
+    public static function near($longitude, $latitude, $username = null) {
+        $query = array(
+            'loc' => array(
+                '$near' => array(
+                    '$geometry' => array(
+                        'type' => 'Point',
+                        'coordinates' => array($longitude, $latitude)
+                    ),
+                    '$maxDistance' => POINT_ACCURACY
+                )
+            )
+        );
+
+        if ($username) $query['username'] = $username;
+        return self::find($query);
+    }
+
+    /**
+     * Gets all ReportedLocations for a given User with $username between
+     * $startDate and $endDate.
+     *
+     * @param string The username
+     * @param MongoDate The start date
+     * @param MongoDate The end date
+     *
+     * @return array
+     */
+    public static function all($username = null, $startTime = null, 
+        $endTime = null, $asJson = false
+    ) {
+        $query = ($username ? array('username' => $username) : array());
+        if ($startTime || $endTime) {
+            $query['reported'] = array('$elemMatch' => array());
+            if ($startTime) {
+                $query['reported']['$elemMatch']['$gte'] = $startTime;
+            }
+            if ($endTime) {
+                $query['reported']['$elemMatch']['$lt'] = $endTime;
+            }
+        }
+
+        return self::find($query, $asJson);
+    }
+
+    /**
+     * Finds ReportedLocations where the values of any specified
+     * attributes in $query match those in MongoDB.
+     *
+     * @param array The query
+     * @param boolean Whether to return each ReportedLocation as an array
+     *
+     * @return array
+     */
+    public static function find($query, $asJson = false) {
+        return parent::pull(self::$mongoDataSource, $query, $asJson);
+    }
+
+    /**
+     * Creates a new ReportedLocation if there isn't any previous existing
+     * ReportedLocation that is near the given $longitude and $latitude for
+     * the given User with $username within POINT_ACCURACY -- otherwise
+     * update the matching near ReportedLocation with a reported timestamp
+     * to indicate that the ReportedLocation was reported again.
+     *
+     * @param float The longitude
+     * @param float The latitude
+     * @param string The username
+     *
+     * @return ReportedLocation
+     */
+    public static function report($longitude, $latitude, $username) {
+        $location = self::near($longitude, $latitude, $username);
+
+        // found location within POINT_ACCURACY meters away in history
+        if ($location) {
+            $location = $location[0];
+            $location->incrementReportedCount();
+
+        // never been reported, so create new Location if the user exists
+        } else if (\OTW\Models\Users\User::exists($username)) {
+            $location = new ReportedLocation(array(
+                'username' => $username,
+                'reported' => array(new \MongoDate()),
+                'loc' => array(
+                    'type' => 'Point',
+                    'coordinates' => array($longitude, $latitude)
+                )
+            ));
+
+            $location->update();
+        }
+
+        // add to ReportedLocationGrid if stationary
+        if ($location && $location->isCurrentlyStationary()) {
+            ReportedLocationGrid::get($username)->insert($location);
+        }
+
+        return $location;
+    }
+}
+
+// Initialize static instance of MongoDB connection
+$mongo = new \MongoClient(\OTW\Models\MONGO_SERVER);
+ReportedLocation::$mongoDataSource = $mongo->OTW->Location;
+
+?>
