@@ -3,8 +3,10 @@
 from eve import Eve
 from eve.auth import TokenAuth, BasicAuth
 from eve.methods.post import post_internal
+from eve_docs import eve_docs
 from gcm import GCM
 from flask import abort
+from flask_bootstrap import Bootstrap
 import random
 import string
 
@@ -103,6 +105,10 @@ if __name__ == '__main__':
 
     # inject user:pass auth for login api provisioning
     app.config['DOMAIN']['apiKeys']['authentication'] = UserAuth
+
+    # eve_docs addon
+    Bootstrap(app)
+    app.register_blueprint(eve_docs, url_prefix='/docs')
 
     # run
     app.run(host='0.0.0.0')
