@@ -90,10 +90,11 @@ def initNewUser(documents):
             }
         }, upsert=False, multi=False)
 
-        # and finally, create a new apiKey
+        # and finally, create a new apiKey and self-owning
         with app.test_request_context():
             post_internal('apiKeys', {
-                'deviceId': document['deviceId']
+                'deviceId': document['deviceId'],
+                'createdBy': document['_id']
             })
 
 if __name__ == '__main__':
