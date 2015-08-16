@@ -1,7 +1,11 @@
 from eve import Eve
 from eve.auth import TokenAuth
+from gcm import GCM
 import random
 import string
+
+# settings
+GCM_API_KEY = 'AIzaSyCvJlZQUf1fEEi0812f_-yNQptbra9IRts'
 
 # default authentication method
 class APIAuth(TokenAuth):
@@ -26,13 +30,26 @@ class APIAuth(TokenAuth):
 
 # custom hooks
 def generateApiKey(document):
-    apiKey = (''.join(random.choice(string.ascii_uppercase) for x in range(16)))
+    apiKey = (''.join(random.choice(string.ascii_uppercase) 
+        for x in range(16)))
 
-    app.data.driver.db['apiKeys'].insert({
-        'apiKey': apiKey,
-        'deviceId': document['deviceId'],
-        'userId': document['_id']
-    })
+    # only insert into MongoDB if GCM went through
+    try:
+        GCM(GCM_API_KEY).json_request(
+            registration_ids=[document['deviceId']],
+            data={
+                'type': 'apiKey',
+                'apiKey': apiKey
+            }
+        )
+
+        app.data.driver.db['apiKeys'].insert({
+            'apiKey': apiKey,
+            'deviceId': document['deviceId'],
+            'userId': document['_id']
+        })
+    except Exception as e:
+        pass
 
 def initNewUsers(documents):
     for document in documents:
