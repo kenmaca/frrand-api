@@ -20,7 +20,6 @@ schema = {
 
 config = {
     'item_title': 'user',
-    'auth_field': 'createdBy',
     'public_methods': ['GET', 'POST'],
     'public_item_methods': [],
     'additional_lookup': {

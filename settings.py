@@ -1,5 +1,9 @@
 import routes.users
 import routes.locations
+import routes.apiKeys
+
+# Eve
+DEBUG = True
 
 # Database
 MONGO_USERNAME = 'frrand'
@@ -14,5 +18,6 @@ PUBLIC_ITEM_METHODS = []
 # Routes
 DOMAIN = {
     'users': routes.users.config,
+    'apiKeys': routes.apiKeys.config,
     'locations': routes.locations.config
 }
