@@ -26,6 +26,11 @@ config = {
         'url': 'regex("[\w]+")',
         'field': 'username'
     },
+    'datasource': {
+        'projection': {
+            'username': 1
+        }
+    },
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
     'schema': schema

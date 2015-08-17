@@ -1,6 +1,8 @@
 import routes.users
-import routes.locations
 import routes.apiKeys
+import routes.locations
+import routes.requests
+import routes.requestInvites
 
 # Eve
 DEBUG = True
@@ -19,5 +21,7 @@ PUBLIC_ITEM_METHODS = []
 DOMAIN = {
     'users': routes.users.config,
     'apiKeys': routes.apiKeys.config,
-    'locations': routes.locations.config
+    'locations': routes.locations.config,
+    'requests': routes.requests.config,
+    'requestInvites': routes.requestInvites.config
 }
