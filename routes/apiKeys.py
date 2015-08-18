@@ -1,3 +1,5 @@
+from utils.auth import UserAuth
+
 schema = {
     'deviceId': {
         'type': 'string',
@@ -20,5 +22,6 @@ config = {
     'public_item_methods': [],
     'allowed_filters': [],
     'resource_methods': ['POST'],
-    'schema': schema
+    'schema': schema,
+    'authentication': UserAuth
 }

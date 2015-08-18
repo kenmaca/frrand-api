@@ -8,9 +8,14 @@ import routes.requestInvites
 DEBUG = True
 
 # Database
+MONGO_HOST = 'localhost'
+MONGO_PORT = 27017
 MONGO_USERNAME = 'frrand'
 MONGO_PASSWORD = 'Triangular'
 MONGO_DBNAME = 'frrand'
+
+# Google Services
+GCM_API_KEY = 'AIzaSyCvJlZQUf1fEEi0812f_-yNQptbra9IRts'
 
 # Security
 AUTH_FIELD = 'createdBy'

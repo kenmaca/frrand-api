@@ -1,3 +1,5 @@
+from utils.auth import NoAuth
+
 schema = {
     'requestId': {
         'type': 'objectid',
@@ -34,5 +36,6 @@ config = {
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
     'embedded_fields': ['requestId', 'from'],
-    'schema': schema
+    'schema': schema,
+    'authentication': NoAuth
 }
