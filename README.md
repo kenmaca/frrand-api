@@ -1,3 +1,3 @@
 # Frrand RESTful API
 ## Documentation
-Moved to the [Wiki](https://github.com/kenmaca/frrand-api/wiki).
+Moved to [generated Docs](http://api.frrand.com:5000/docs).
