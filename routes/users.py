@@ -12,6 +12,9 @@ schema = {
         'maxlength': 100,
         'required': True
     },
+
+    # will be updated on auth success, but does not
+    # guarantee that the deviceId is valid and contactable
     'deviceId': {
         'type': 'string',
         'required': True

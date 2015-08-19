@@ -6,6 +6,9 @@ from datetime import datetime, timedelta
 import random
 import string
 
+# user hooks
+
+# on_insert_apiKeys
 def provisionApiKey(apiKeys):
     ''' (dict) -> NoneType
     An Eve hook used to generate an apiKey from a document that is about
@@ -30,6 +33,20 @@ def provisionApiKey(apiKeys):
         else:
             abort(422)
 
+# on_insert_apiKeys
+def pruneStaleApiKeys(apiKeys):
+    ''' (dict) -> NoneType
+    An Eve hook used to remove any other apiKeys with the same
+    deviceId as newly inserted ones to maintain a 1-to-1 pairing
+    of deviceIds to apiKeys.
+    '''
+
+    for apiKey in apiKeys:
+        app.data.driver.db['apiKeys'].remove({
+            'deviceId': apiKey['deviceId']
+        })
+
+# on_inserted_users
 def initNewUser(users):
     ''' (dict) -> NoneType
     An Eve hook used to set the createdBy field for an newly
@@ -55,6 +72,9 @@ def initNewUser(users):
                 'createdBy': user['_id']
             })
 
+# request hooks
+
+# on_inserted_requests
 def generateRequestInvites(requests):
     ''' (dict) -> NoneType
     An Eve hook used to automatically generate RequestInvites for
@@ -67,6 +87,9 @@ def generateRequestInvites(requests):
     for request in requests:
         for user in users:
             with app.test_request_context():
+
+                # adding to list of inviteIds is dependant on
+                # on_inserted_requestInvites to get _id
                 post_internal('requestInvites', {
                     'requestId': request['_id'],
                     'location': {
@@ -77,6 +100,7 @@ def generateRequestInvites(requests):
                     'createdBy': user['_id']
                 })
 
+# on_inserted_requestInvites
 def requestInviteSendGcm(requestInvites):
     ''' (dict) -> NoneType
     An Eve hook used to send out requestInvites via GCM.
@@ -90,17 +114,17 @@ def requestInviteSendGcm(requestInvites):
             {'$push': {'inviteIds': requestInvite['_id']}}
         )
 
-        # send gcm
-        deviceIds = app.data.driver.db['apiKeys'].find({
-            'createdBy': requestInvite['createdBy']
-        }).sort('_id', -1).limit(1)
+        targetUser = app.data.driver.db['users'].find({
+            '_id': requestInvite['createdBy']
+        })
 
-        for deviceId in deviceIds:
-            gcmSend(deviceId['deviceId'], {
-                'type': 'requestInvite',
-                'requestInvite': requestInvite
-            })
+        # send gcm out
+        gcmSend(targetUser['deviceId'], {
+            'type': 'requestInvite',
+            'requestInvite': requestInvite
+        })
 
+# on_insert_requestInvites
 def requestInviteExpiry(requestInvites):
     ''' (dict) -> NoneType
     An Eve hook used to add an expiry time of 1 minute to each
@@ -112,6 +136,46 @@ def requestInviteExpiry(requestInvites):
             minutes=1
         )
 
+# on_update_requestInvites
+def allowAcceptanceOfRequestInvite(changes, requestInvite):
+    ''' (dict) -> NoneType
+    An Eve hook used to determine if a requestInvite can be accepted or not
+    by its requestExpiry < currentTime.
+    '''
+
+    if (('accepted' in changes)
+        and (changes['accepted'] and not requestInvite['accepted'])
+    ):
+        if (requestInvite['requestExpiry'] > datetime.utcnow()):
+
+            # invite has expired, force unacceptable
+            abort(422)
+
+# on_updated_requestInvites
+def alertOwnerOfAcceptedRequestInvite(changes, requestInvite):
+    ''' (dict) -> NoneType
+    An Eve hook used to alert the request owner of a requestInvite that was
+    successfully accepted by the invitee.
+    '''
+
+    if (('accepted' in changes)
+        and (changes['accepted'] and not requestInvite['accepted'])
+    ):
+        requestOwner = app.data.driver.db['users'].find({
+            '_id': requestInvite['from']
+        })
+
+        # alert request owner of the acceptance
+        gcmSend(requestOwner['deviceId'], {
+            'type': 'requestInviteAccepted',
+            'requestInviteAccepted': (lambda a, b: a.update(b) or a)(
+                requestInvite, changes
+            )
+        })
+
+# location hooks
+
+# on_insert_locations
 def supplementLocationData(locations):
     ''' (dict) -> NoneType
     An Eve hook used to add dayOfWeek and hour data as well as
@@ -129,15 +193,3 @@ def supplementLocationData(locations):
         # approximate coordinates
         location['location']['coordinates'] = [round(point, 4)
             for point in location['location']['coordinates']]
-
-def pruneStaleApiKeys(apiKeys):
-    ''' (dict) -> NoneType
-    An Eve hook used to remove any other apiKeys with the same
-    deviceId as newly inserted ones to maintain a 1-to-1 pairing
-    of deviceIds to apiKeys.
-    '''
-
-    for apiKey in apiKeys:
-        app.data.driver.db['apiKeys'].remove({
-            'deviceId': apiKey['deviceId']
-        })

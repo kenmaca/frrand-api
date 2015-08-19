@@ -49,7 +49,7 @@ config = {
     'public_methods': [],
     'public_item_methods': [],
     'allowed_filters': [],
-    'resource_methods': ['GET', 'POST'],
+    'resource_methods': ['GET', 'POST', 'PATCH'],
     'embedded_fields': ['requestId', 'from'],
     'schema': schema
 }

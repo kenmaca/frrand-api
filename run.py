@@ -13,6 +13,8 @@ if __name__ == '__main__':
     app.on_insert_locations += supplementLocationData
     app.on_insert_requestInvites += requestInviteExpiry
     app.on_inserted_requestInvites += requestInviteSendGcm
+    app.on_update_requestInvites += allowAcceptanceOfRequestInvite
+    app.on_updated_requestInvites += alertOwnerOfAcceptedRequestInvite
     app.on_inserted_requests += generateRequestInvites
     app.on_inserted_users += initNewUser
     app.on_insert_apiKeys += provisionApiKey

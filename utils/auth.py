@@ -15,7 +15,16 @@ class APIAuth(TokenAuth):
 
         apiKey = app.data.driver.db['apiKeys'].find_one({'apiKey': token})
         if (apiKey and 'createdBy' in apiKey):
+
+            # set ownership of any resources created/modified by this user
             self.set_request_auth_value(apiKey['createdBy'])
+
+            # set last used apiKey for this user
+            app.data.driver.db['users'].update(
+                {'_id': apiKey['createdBy']},
+                {'deviceId': apiKey['deviceId']},
+                {'upsert': False, 'multi': False}
+            )
 
         return apiKey
 
