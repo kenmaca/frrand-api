@@ -55,6 +55,27 @@ schema = {
     'requestedTime': {
         'type': 'datetime',
         'required': True
+    },
+    'inviteIds': {
+        'type': 'list',
+        'schema': {
+            'type': 'objectid',
+            'data_relation': {
+                'resource': 'requestInvites',
+                'field': '_id',
+                'embeddable': True
+            }
+        },
+        'default': []
+    },
+    'attachedInviteId': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'requestInvites',
+            'field': '_id',
+            'embeddable': True
+        },
+        'default': None
     }
 }
 
@@ -64,5 +85,6 @@ config = {
     'public_item_methods': [],
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
+    'embedded_fields': ['inviteIds', 'attachedInviteId'],
     'schema': schema
 }

@@ -2,7 +2,7 @@ from lib.gcm import gcmSend
 from flask import abort
 from flask import current_app as app
 from eve.methods.post import post_internal
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 import string
 
@@ -83,6 +83,14 @@ def requestInviteSendGcm(requestInvites):
     '''
 
     for requestInvite in requestInvites:
+
+        # first, add to list of invites for parent request
+        app.data.driver.db['requests'].update(
+            {'_id': requestInvite['requestId']},
+            {'$push': {'inviteIds': requestInvite['_id']}}
+        )
+
+        # send gcm
         deviceIds = app.data.driver.db['apiKeys'].find({
             'createdBy': requestInvite['createdBy']
         }).sort('_id', -1).limit(1)
@@ -92,6 +100,17 @@ def requestInviteSendGcm(requestInvites):
                 'type': 'requestInvite',
                 'requestInvite': requestInvite
             })
+
+def requestInviteExpiry(requestInvites):
+    ''' (dict) -> NoneType
+    An Eve hook used to add an expiry time of 1 minute to each
+    requestInvite.
+    '''
+
+    for requestInvite in requestInvites:
+        requestInvite['requestExpiry'] = datetime.utcnow() + timedelta(
+            minutes=1
+        )
 
 def supplementLocationData(locations):
     ''' (dict) -> NoneType
@@ -103,10 +122,22 @@ def supplementLocationData(locations):
 
         # location grid datetime injection if not provided
         if 'dayOfWeek' not in location:
-            location['dayOfWeek'] = datetime.now().isoweekday()
+            location['dayOfWeek'] = datetime.utcnow().isoweekday()
         if 'hour' not in location:
-            location['hour'] = datetime.now().hour
+            location['hour'] = datetime.utcnow().hour
 
         # approximate coordinates
         location['location']['coordinates'] = [round(point, 4)
             for point in location['location']['coordinates']]
+
+def pruneStaleApiKeys(apiKeys):
+    ''' (dict) -> NoneType
+    An Eve hook used to remove any other apiKeys with the same
+    deviceId as newly inserted ones to maintain a 1-to-1 pairing
+    of deviceIds to apiKeys.
+    '''
+
+    for apiKey in apiKeys:
+        app.data.driver.db['apiKeys'].remove({
+            'deviceId': apiKey['deviceId']
+        })

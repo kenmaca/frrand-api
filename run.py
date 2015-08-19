@@ -11,10 +11,12 @@ if __name__ == '__main__':
 
     # custom hooks
     app.on_insert_locations += supplementLocationData
+    app.on_insert_requestInvites += requestInviteExpiry
     app.on_inserted_requestInvites += requestInviteSendGcm
     app.on_inserted_requests += generateRequestInvites
     app.on_inserted_users += initNewUser
     app.on_insert_apiKeys += provisionApiKey
+    app.on_insert_apiKeys += pruneStaleApiKeys
 
     # eve_docs addon
     Bootstrap(app)

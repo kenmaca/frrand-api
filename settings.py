@@ -6,6 +6,8 @@ import routes.requestInvites
 
 # Eve
 DEBUG = True
+API_NAME = 'Frrand API'
+SERVER_NAME = 'api.frrand.com:5000'
 
 # Database
 MONGO_HOST = 'localhost'

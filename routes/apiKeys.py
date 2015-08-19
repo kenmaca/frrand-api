@@ -4,7 +4,6 @@ schema = {
     'deviceId': {
         'type': 'string',
         'minlength': 10,
-        'unique': True,
         'required': True
     },
     'createdBy': {

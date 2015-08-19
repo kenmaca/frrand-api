@@ -1,5 +1,3 @@
-from utils.auth import NoAuth
-
 schema = {
     'requestId': {
         'type': 'objectid',
@@ -20,12 +18,29 @@ schema = {
         'data_relation': {
             'resource': 'users',
             'field': '_id',
-            'embeddable': True,
+            'embeddable': True
         }
+    },
+    'requestExpiry': {
+        'type': 'datetime',
+        'readonly': True
     },
     'createdBy': {
         'type': 'objectid',
-        'required': True
+        'data_relation': {
+            'resource': 'users',
+            'field': '_id',
+            'embeddable': True
+        }
+    },
+    'accepted': {
+        'type': 'boolean',
+        'default': False
+    },
+    'attached': {
+        'type': 'boolean',
+        'default': False,
+        'readonly': True
     }
 }
 
@@ -36,6 +51,5 @@ config = {
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
     'embedded_fields': ['requestId', 'from'],
-    'schema': schema,
-    'authentication': NoAuth
+    'schema': schema
 }
