@@ -15,6 +15,7 @@ if __name__ == '__main__':
     app.on_inserted_requestInvites += requestInviteSendGcm
     app.on_update_requestInvites += allowAcceptanceOfRequestInvite
     app.on_updated_requestInvites += alertOwnerOfAcceptedRequestInvite
+    app.on_fetch_item_requests += pruneExpiredInvites
     app.on_inserted_requests += generateRequestInvites
     app.on_inserted_users += initNewUser
     app.on_insert_apiKeys += provisionApiKey

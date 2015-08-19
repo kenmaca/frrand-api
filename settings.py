@@ -8,6 +8,7 @@ import routes.requestInvites
 DEBUG = True
 API_NAME = 'Frrand API'
 SERVER_NAME = 'api.frrand.com:5000'
+CACHE_CONTROL = 'max-age=0,must-revalidate'
 
 # Database
 MONGO_HOST = 'localhost'

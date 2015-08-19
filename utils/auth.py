@@ -22,8 +22,8 @@ class APIAuth(TokenAuth):
             # set last used apiKey for this user
             app.data.driver.db['users'].update(
                 {'_id': apiKey['createdBy']},
-                {'deviceId': apiKey['deviceId']},
-                {'upsert': False, 'multi': False}
+                {'$set': {'deviceId': apiKey['deviceId']}},
+                upsert=False, multi=False
             )
 
         return apiKey

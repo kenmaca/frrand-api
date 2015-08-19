@@ -74,6 +74,43 @@ def initNewUser(users):
 
 # request hooks
 
+# on_fetch_item_requests
+def pruneExpiredInvites(request):
+    ''' (dict) -> NoneType
+    An Eve hook used to prune any expired requestInvites associated
+    with this request.
+    '''
+
+    print('fetching request: ' + str(request))
+
+    pendingInvites = []
+
+    if 'inviteIds' in request:
+        for inviteId in request['inviteIds']:
+            requestInvite = app.data.driver.db['requestInvites'].find({
+                '_id': inviteId
+            })
+
+            # not accepted and expired, so remove the requestInvite
+            if ((requestInvite['requestExpiry'] > datetime.utcnow()) and
+                (not requestInvite['accepted'])
+            ):
+
+                # remove actual requestInvite
+                app.data.driver.db['requestInvites'].remove({
+                    '_id': inviteId
+                })
+
+                # now from the list of inviteIds in this request's list
+                request['inviteIds'].remove(inviteId)
+
+        # update actual database with pruned list
+        app.data.driver.db['requests'].update(
+            {'_id': request['_id']},
+            {'$set': {'inviteIds': request['inviteIds']}},
+            upsert=False, multi=False
+        )
+
 # on_inserted_requests
 def generateRequestInvites(requests):
     ''' (dict) -> NoneType
