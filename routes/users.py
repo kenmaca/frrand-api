@@ -12,6 +12,10 @@ schema = {
         'maxlength': 100,
         'required': True
     },
+    'active': {
+        'type': 'boolean',
+        'default': True
+    },
 
     # will be updated on auth success, but does not
     # guarantee that the deviceId is valid and contactable
@@ -35,6 +39,7 @@ config = {
         }
     },
     'allowed_filters': [],
+    'item_methods': ['PATCH'],
     'resource_methods': ['GET', 'POST'],
     'schema': schema
 }

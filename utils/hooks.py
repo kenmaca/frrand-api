@@ -3,6 +3,7 @@ from flask import abort
 from flask import current_app as app
 from eve.methods.post import post_internal
 from datetime import datetime, timedelta
+from bson import ObjectId
 import random
 import string
 
@@ -65,29 +66,39 @@ def initNewUser(users):
             }
         }, upsert=False, multi=False)
 
-        # and finally, create a new apiKey and self-owning
-        with app.test_request_context():
-            resp = post_internal('apiKeys', {
-                'deviceId': user['deviceId'],
-                'createdBy': user['_id']
-            })
-
 # request hooks
 
-# on_fetch_item_requests
+# on_pre_GET_requests
+def forceFetchNewRequests(request, lookup):
+    ''' (Request, dict) -> NoneType
+    An Eve hook used to force a fresh fetch when requesting a
+    request document.
+    '''
+
+    if '_id' in lookup:
+
+        # update last updated to trigger fresh fetch each time
+        res = app.data.driver.db['requests'].update(
+            {'_id': ObjectId(lookup['_id'])},
+            {'$set': {'_updated': datetime.utcnow()}},
+            upsert=False, multi=False
+        )
+
+# on_fetched_item_requests
 def pruneExpiredInvites(request):
     ''' (dict) -> NoneType
     An Eve hook used to prune any expired requestInvites associated
     with this request.
     '''
 
-    print('fetching request: ' + str(request))
-
+    return
     pendingInvites = []
 
     if 'inviteIds' in request:
         for inviteId in request['inviteIds']:
-            requestInvite = app.data.driver.db['requestInvites'].find({
+            print(type(inviteId))
+
+            requestInvite = app.data.driver.db['requestInvites'].find_one({
                 '_id': inviteId
             })
 
@@ -103,13 +114,6 @@ def pruneExpiredInvites(request):
 
                 # now from the list of inviteIds in this request's list
                 request['inviteIds'].remove(inviteId)
-
-        # update actual database with pruned list
-        app.data.driver.db['requests'].update(
-            {'_id': request['_id']},
-            {'$set': {'inviteIds': request['inviteIds']}},
-            upsert=False, multi=False
-        )
 
 # on_inserted_requests
 def generateRequestInvites(requests):
@@ -127,15 +131,21 @@ def generateRequestInvites(requests):
 
                 # adding to list of inviteIds is dependant on
                 # on_inserted_requestInvites to get _id
-                post_internal('requestInvites', {
+                resp = post_internal('requestInvites', {
                     'requestId': request['_id'],
                     'location': {
                         'type': 'Point',
                         'coordinates': [0.0, 0.0]
                     },
-                    'from': request['createdBy'],
-                    'createdBy': user['_id']
+                    'from': request['createdBy']
                 })
+
+                # set ownership of invite to invitee
+                app.data.driver.db['requestInvites'].update(
+                    {'_id': resp[0]['_id']},
+                    {'$set': {'createdBy': user['_id']}},
+                    upsert=False, multi=False
+                )
 
 # on_inserted_requestInvites
 def requestInviteSendGcm(requestInvites):
@@ -151,7 +161,7 @@ def requestInviteSendGcm(requestInvites):
             {'$push': {'inviteIds': requestInvite['_id']}}
         )
 
-        targetUser = app.data.driver.db['users'].find({
+        targetUser = app.data.driver.db['users'].find_one({
             '_id': requestInvite['createdBy']
         })
 

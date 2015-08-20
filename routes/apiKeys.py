@@ -22,5 +22,5 @@ config = {
     'allowed_filters': [],
     'resource_methods': ['POST'],
     'schema': schema,
-    'authentication': UserAuth
+    'authentication': UserAuth()
 }
