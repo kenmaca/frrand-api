@@ -67,7 +67,7 @@ def initNewUser(users):
 
         # and finally, create a new apiKey and self-owning
         with app.test_request_context():
-            post_internal('apiKeys', {
+            resp = post_internal('apiKeys', {
                 'deviceId': user['deviceId'],
                 'createdBy': user['_id']
             })
