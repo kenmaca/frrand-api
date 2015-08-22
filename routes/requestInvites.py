@@ -4,8 +4,7 @@ schema = {
         'required': True,
         'data_relation': {
             'resource': 'requests',
-            'field': '_id',
-            'embeddable': True,
+            'field': '_id'
         }
     },
     'location': {
@@ -17,8 +16,7 @@ schema = {
         'required': True,
         'data_relation': {
             'resource': 'users',
-            'field': '_id',
-            'embeddable': True
+            'field': '_id'
         }
     },
     'requestExpiry': {
@@ -29,8 +27,7 @@ schema = {
         'type': 'objectid',
         'data_relation': {
             'resource': 'users',
-            'field': '_id',
-            'embeddable': True
+            'field': '_id'
         }
     },
     'accepted': {
@@ -50,6 +47,5 @@ config = {
     'public_item_methods': [],
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
-    'embedded_fields': ['requestId', 'from'],
     'schema': schema
 }

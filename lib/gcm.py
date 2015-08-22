@@ -8,11 +8,13 @@ def gcmSend(deviceId, data):
     '''
 
     try:
-        if ('errors' in GCM(GCM_API_KEY).json_request(
-            registration_ids=[deviceId], data=data)
-        ):
+        gcmResult = GCM(GCM_API_KEY).json_request(
+            registration_ids=[deviceId], data=data
+        )
+
+        if 'errors' in gcmResult:
             return False
         return True
 
-    except Exception:
+    except Exception as e:
         return False

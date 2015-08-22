@@ -10,13 +10,14 @@ app = Eve(auth=APIAuth())
 
 # custom hooks
 app.on_insert_locations += supplementLocationData
+app.on_pre_GET_requestInvites += forceFetchNewRequestInvites
+app.on_fetched_item_requestInvites += embedRequestInviteDisplay
 app.on_insert_requestInvites += requestInviteExpiry
-app.on_inserted_requestInvites += requestInviteSendGcm
 app.on_update_requestInvites += allowAcceptanceOfRequestInvite
 app.on_updated_requestInvites += alertOwnerOfAcceptedRequestInvite
 app.on_inserted_requests += generateRequestInvites
 app.on_pre_GET_requests += forceFetchNewRequests
-app.on_fetched_item_requests += pruneExpiredInvites
+app.on_fetched_item_requests += embedRequestDisplay
 app.on_inserted_users += initNewUser
 app.on_insert_apiKeys += provisionApiKey
 app.on_insert_apiKeys += pruneStaleApiKeys

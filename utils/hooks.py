@@ -2,8 +2,11 @@ from lib.gcm import gcmSend
 from flask import abort
 from flask import current_app as app
 from eve.methods.post import post_internal
+from eve.utils import date_to_rfc1123
 from datetime import datetime, timedelta
-from bson import ObjectId
+from pytz import UTC
+from bson import ObjectId, json_util
+import json
 import random
 import string
 
@@ -85,35 +88,82 @@ def forceFetchNewRequests(request, lookup):
         )
 
 # on_fetched_item_requests
-def pruneExpiredInvites(request):
+def embedRequestDisplay(request):
     ''' (dict) -> NoneType
-    An Eve hook used to prune any expired requestInvites associated
-    with this request.
+    An Eve hook used to embed requestInvites to its parent request
+    as well as prune the expired and unaccepted invites.
     '''
 
-    return
     pendingInvites = []
-
     if 'inviteIds' in request:
         for inviteId in request['inviteIds']:
-            print(type(inviteId))
-
             requestInvite = app.data.driver.db['requestInvites'].find_one({
                 '_id': inviteId
             })
 
             # not accepted and expired, so remove the requestInvite
-            if ((requestInvite['requestExpiry'] > datetime.utcnow()) and
-                (not requestInvite['accepted'])
+            if ((requestInvite['requestExpiry']
+                < datetime.utcnow().replace(tzinfo=UTC))
+                and (not requestInvite['accepted'])
             ):
 
                 # remove actual requestInvite
                 app.data.driver.db['requestInvites'].remove({
                     '_id': inviteId
                 })
+            else:
+                pendingInvites.append(requestInvite)
 
-                # now from the list of inviteIds in this request's list
-                request['inviteIds'].remove(inviteId)
+        # update list of tracked requestInvites in parent request
+        app.data.driver.db['requests'].update(
+            {'_id': request['_id']},
+            {'$set': {'inviteIds': 
+                [invite['_id'] for invite in pendingInvites]
+            }},
+            upsert=False, multi=False
+        )
+
+        # finally, replace output list of invites with embedded ones
+        request['inviteIds'] = pendingInvites
+
+# on_pre_GET_requestInvites
+def forceFetchNewRequestInvites(request, lookup):
+    ''' (Request, dict) -> NoneType
+    An Eve hook used to force a fresh fetch when requesting a
+    requestInvite document.
+    '''
+
+    if '_id' in lookup:
+
+        # update last updated to trigger fresh fetch each time
+        res = app.data.driver.db['requestInvites'].update(
+            {'_id': ObjectId(lookup['_id'])},
+            {'$set': {'_updated': datetime.utcnow()}},
+            upsert=False, multi=False
+        )
+
+# on_fetched_item_requestInvites
+def embedRequestInviteDisplay(request):
+    ''' (dict) -> NoneType
+    An Eve hook used to embed requests to its child requestInvites as
+    well as to convert all times to strings in RFC-1123 standard.
+    '''
+
+    # hard-coded conversion to RFC-1123
+    # TODO: change to something dynamic
+    request['requestExpiry'] = date_to_rfc1123(request['requestExpiry'])
+    request['_updated'] = date_to_rfc1123(request['_updated'])
+    request['_created'] = date_to_rfc1123(request['_created'])
+
+    # embed parent request
+    request['requestId'] = app.data.driver.db['requests'].find_one(
+        {'_id': request['requestId']}
+    )
+
+    # embed from (only username here, do not provide entire document
+    request['from'] = app.data.driver.db['users'].find_one(
+        {'_id': request['from']}
+    )['username']
 
 # on_inserted_requests
 def generateRequestInvites(requests):
@@ -121,6 +171,8 @@ def generateRequestInvites(requests):
     An Eve hook used to automatically generate RequestInvites for
     the given Requests and sends out the RequestInvite via GCM.
     '''
+
+    invitesGenerated = []
 
     # currently just sends out to ALL users (for dev use only)
     # TODO: perform candidate matching here
@@ -147,40 +199,37 @@ def generateRequestInvites(requests):
                     upsert=False, multi=False
                 )
 
-# on_inserted_requestInvites
-def requestInviteSendGcm(requestInvites):
-    ''' (dict) -> NoneType
-    An Eve hook used to send out requestInvites via GCM.
-    '''
+                # get updated requestInvite
+                requestInvite = app.data.driver.db['requestInvites'].find_one(
+                    {'_id': resp[0]['_id']}
+                )
 
-    for requestInvite in requestInvites:
+                # add this invite to the parent request list
+                invitesGenerated.append(requestInvite['_id'])
 
-        # first, add to list of invites for parent request
+                # and finally, send gcm out
+                gcmSend(user['deviceId'], {
+                    'type': 'requestInvite',
+                    'requestInvite': embedRequestInviteDisplay(requestInvite),
+                })
+
+        # update list of inviteIds in Mongo
         app.data.driver.db['requests'].update(
-            {'_id': requestInvite['requestId']},
-            {'$push': {'inviteIds': requestInvite['_id']}}
+            {'_id': request['_id']},
+            {'$set': {'inviteIds': invitesGenerated}},
+            upsert=False, multi=False
         )
-
-        targetUser = app.data.driver.db['users'].find_one({
-            '_id': requestInvite['createdBy']
-        })
-
-        # send gcm out
-        gcmSend(targetUser['deviceId'], {
-            'type': 'requestInvite',
-            'requestInvite': requestInvite
-        })
 
 # on_insert_requestInvites
 def requestInviteExpiry(requestInvites):
     ''' (dict) -> NoneType
-    An Eve hook used to add an expiry time of 1 minute to each
+    An Eve hook used to add an expiry time of 15 minutes to each
     requestInvite.
     '''
 
     for requestInvite in requestInvites:
         requestInvite['requestExpiry'] = datetime.utcnow() + timedelta(
-            minutes=1
+            minutes=15
         )
 
 # on_update_requestInvites

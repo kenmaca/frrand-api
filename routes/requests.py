@@ -62,8 +62,7 @@ schema = {
             'type': 'objectid',
             'data_relation': {
                 'resource': 'requestInvites',
-                'field': '_id',
-                'embeddable': True
+                'field': '_id'
             }
         },
         'default': []
@@ -72,8 +71,7 @@ schema = {
         'type': 'objectid',
         'data_relation': {
             'resource': 'requestInvites',
-            'field': '_id',
-            'embeddable': True
+            'field': '_id'
         },
         'default': None
     }
@@ -85,6 +83,5 @@ config = {
     'public_item_methods': [],
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
-    'embedded_fields': ['inviteIds', 'attachedInviteId'],
     'schema': schema
 }
