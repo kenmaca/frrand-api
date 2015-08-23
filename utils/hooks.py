@@ -2,7 +2,6 @@ from lib.gcm import gcmSend
 from flask import abort
 from flask import current_app as app
 from eve.methods.post import post_internal
-from eve.utils import date_to_rfc1123
 from datetime import datetime, timedelta
 from pytz import UTC
 from bson import ObjectId, json_util
@@ -147,20 +146,15 @@ def embedRequestInviteDisplay(request):
     ''' (dict) -> NoneType
     An Eve hook used to embed requests to its child requestInvites as
     well as to convert all times to strings in RFC-1123 standard.
+    request is mutated with new values.
     '''
-
-    # hard-coded conversion to RFC-1123
-    # TODO: change to something dynamic
-    request['requestExpiry'] = date_to_rfc1123(request['requestExpiry'])
-    request['_updated'] = date_to_rfc1123(request['_updated'])
-    request['_created'] = date_to_rfc1123(request['_created'])
 
     # embed parent request
     request['requestId'] = app.data.driver.db['requests'].find_one(
         {'_id': request['requestId']}
     )
 
-    # embed from (only username here, do not provide entire document
+    # embed from (only username here, do not provide entire document)
     request['from'] = app.data.driver.db['users'].find_one(
         {'_id': request['from']}
     )['username']
@@ -207,10 +201,13 @@ def generateRequestInvites(requests):
                 # add this invite to the parent request list
                 invitesGenerated.append(requestInvite['_id'])
 
+                # embed parent request to the newly created requestInvite
+                embedRequestInviteDisplay(requestInvite)
+
                 # and finally, send gcm out
                 gcmSend(user['deviceId'], {
                     'type': 'requestInvite',
-                    'requestInvite': embedRequestInviteDisplay(requestInvite),
+                    'requestInvite': requestInvite
                 })
 
         # update list of inviteIds in Mongo

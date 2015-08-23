@@ -1,5 +1,8 @@
 from gcm import GCM
 from settings import GCM_API_KEY
+from datetime import datetime
+from eve.utils import date_to_rfc1123
+from bson import ObjectId
 
 def gcmSend(deviceId, data):
     ''' (list of str, dict) -> bool
@@ -8,6 +11,9 @@ def gcmSend(deviceId, data):
     '''
 
     try:
+        # sanitize payload first for non-serializable objects
+        gcmSafe(data)
+
         gcmResult = GCM(GCM_API_KEY).json_request(
             registration_ids=[deviceId], data=data
         )
@@ -18,3 +24,24 @@ def gcmSend(deviceId, data):
 
     except Exception as e:
         return False
+
+def gcmSafe(sourceDict):
+    ''' (dict) -> NoneType
+    Recursively mutates all non-serializable values to strings in
+    sourceDict.
+    '''
+    
+    for k, v in sourceDict.items():
+
+        # recursive if nested dict
+        if isinstance(v, dict):
+            gcmSafe(v)
+
+        # mutate datetime to rfc1123 string
+        elif isinstance(v, datetime):
+            sourceDict[k] = date_to_rfc1123(v)
+
+        # mutate bson.ObjectId to string
+        elif isinstance(v, ObjectId):
+            sourceDict[k] = str(v)
+
