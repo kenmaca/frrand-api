@@ -1,3 +1,5 @@
+from flask import current_app as app
+
 schema = {
     'username': {
         'type': 'string',
@@ -43,3 +45,31 @@ config = {
     'resource_methods': ['GET', 'POST'],
     'schema': schema
 }
+
+def init(app):
+    ''' (LocalProxy) -> NoneType
+    Adds this route's specific hooks to this route.
+    '''
+
+    app.on_inserted_users += initNewUser
+
+# hooks
+
+# on_inserted_users
+def initNewUser(users):
+    ''' (dict) -> NoneType
+    An Eve hook used to set the createdBy field for an newly
+    inserted user document to itself (since Eve handles
+    auth_field only when inserting via Authenticated routes).
+    '''
+
+    for user in users:
+
+        # set newly created user as self-owning
+        app.data.driver.db['users'].update({
+            '_id': user['_id']
+        }, {
+            '$set': {
+                'createdBy': user['_id']
+            }
+        }, upsert=False, multi=False)

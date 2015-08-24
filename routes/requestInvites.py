@@ -1,3 +1,9 @@
+from flask import current_app as app
+from flask import abort
+from datetime import datetime, timedelta
+from bson import ObjectId
+from lib.gcm import gcmSend
+
 schema = {
     'requestId': {
         'type': 'objectid',
@@ -50,3 +56,100 @@ config = {
     'item_methods': ['GET', 'PATCH'],
     'schema': schema
 }
+
+def init(app):
+    ''' (LocalProxy) -> NoneType
+    Adds this route's specific hooks to this route.
+    '''
+
+    app.on_pre_GET_requestInvites += forceFetchNewRequestInvites
+    app.on_fetched_item_requestInvites += embedRequestInviteDisplay
+    app.on_insert_requestInvites += requestInviteExpiry
+    app.on_update_requestInvites += allowAcceptanceOfRequestInvite
+    app.on_updated_requestInvites += alertOwnerOfAcceptedRequestInvite
+
+# hooks
+
+# on_pre_GET_requestInvites
+def forceFetchNewRequestInvites(request, lookup):
+    ''' (Request, dict) -> NoneType
+    An Eve hook used to force a fresh fetch when requesting a
+    requestInvite document.
+    '''
+
+    if '_id' in lookup:
+
+        # update last updated to trigger fresh fetch each time
+        res = app.data.driver.db['requestInvites'].update(
+            {'_id': ObjectId(lookup['_id'])},
+            {'$set': {'_updated': datetime.utcnow()}},
+            upsert=False, multi=False
+        )
+
+# on_fetched_item_requestInvites
+def embedRequestInviteDisplay(request):
+    ''' (dict) -> NoneType
+    An Eve hook used to embed requests to its child requestInvites as
+    well as to convert all times to strings in RFC-1123 standard.
+    request is mutated with new values.
+    '''
+
+    # embed parent request
+    request['requestId'] = app.data.driver.db['requests'].find_one(
+        {'_id': request['requestId']}
+    )
+
+    # embed from (only username here, do not provide entire document)
+    request['from'] = app.data.driver.db['users'].find_one(
+        {'_id': request['from']}
+    )['username']
+
+# on_insert_requestInvites
+def requestInviteExpiry(requestInvites):
+    ''' (dict) -> NoneType
+    An Eve hook used to add an expiry time of 15 minutes to each
+    requestInvite.
+    '''
+
+    for requestInvite in requestInvites:
+        requestInvite['requestExpiry'] = datetime.utcnow() + timedelta(
+            minutes=15
+        )
+
+# on_update_requestInvites
+def allowAcceptanceOfRequestInvite(changes, requestInvite):
+    ''' (dict) -> NoneType
+    An Eve hook used to determine if a requestInvite can be accepted or not
+    by its requestExpiry < currentTime.
+    '''
+
+    if (('accepted' in changes)
+        and (changes['accepted'] and not requestInvite['accepted'])
+    ):
+        if (requestInvite['requestExpiry'] > datetime.utcnow()):
+
+            # invite has expired, force unacceptable
+            abort(422)
+
+# on_updated_requestInvites
+def alertOwnerOfAcceptedRequestInvite(changes, requestInvite):
+    ''' (dict) -> NoneType
+    An Eve hook used to alert the request owner of a requestInvite that was
+    successfully accepted by the invitee.
+    '''
+
+    if (('accepted' in changes)
+        and (changes['accepted'] and not requestInvite['accepted'])
+    ):
+        requestOwner = app.data.driver.db['users'].find({
+            '_id': requestInvite['from']
+        })
+
+        # alert request owner of the acceptance
+        gcmSend(requestOwner['deviceId'], {
+            'type': 'requestInviteAccepted',
+            'requestInviteAccepted': (lambda a, b: a.update(b) or a)(
+                requestInvite, changes
+            )
+        })
+

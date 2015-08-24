@@ -18,9 +18,6 @@ MONGO_USERNAME = 'frrand'
 MONGO_PASSWORD = 'Triangular'
 MONGO_DBNAME = 'frrand'
 
-# Google Services
-GCM_API_KEY = 'AIzaSyCvJlZQUf1fEEi0812f_-yNQptbra9IRts'
-
 # Security
 AUTH_FIELD = 'createdBy'
 PUBLIC_METHODS = []
@@ -35,3 +32,17 @@ DOMAIN = {
     'requests': routes.requests.config,
     'requestInvites': routes.requestInvites.config
 }
+
+# Utils
+def init(app):
+    ''' (LocalProxy) -> NoneType
+    Adds all known hooks to their respective routes as defined by
+    each route's init function.
+    '''
+
+    routes.users.init(app)
+    routes.addresses.init(app)
+    routes.apiKeys.init(app)
+    routes.locations.init(app)
+    routes.requests.init(app)
+    routes.requestInvites.init(app)
