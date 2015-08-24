@@ -47,5 +47,6 @@ config = {
     'public_item_methods': [],
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
+    'item_methods': ['GET', 'PATCH'],
     'schema': schema
 }

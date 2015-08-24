@@ -28,7 +28,10 @@ def provisionApiKey(apiKeys):
         # only insert into MongoDB if GCM went through
         if (gcmSend(key['deviceId'], {
             'type': 'apiKey',
-            'apiKey': apiKey
+            'apiKey': {
+                'apiKey': apiKey,
+                'userId': key['createdBy']
+            }
         })):
 
             # inject generated apiKey to doc
@@ -207,7 +210,7 @@ def generateRequestInvites(requests):
                 # and finally, send gcm out
                 gcmSend(user['deviceId'], {
                     'type': 'requestInvite',
-                    'requestInvite': requestInvite
+                    'requestInvite': requestInvite['_id']
                 })
 
         # update list of inviteIds in Mongo

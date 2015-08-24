@@ -74,6 +74,16 @@ schema = {
             'field': '_id'
         },
         'default': None
+    },
+    'destination': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'addresses',
+            'field': '_id'
+        },
+
+        # TODO: remove this and make mandatory when implemented on client side
+        'default': None
     }
 }
 
@@ -83,5 +93,6 @@ config = {
     'public_item_methods': [],
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
+    'item_methods': ['GET', 'PATCH'],
     'schema': schema
 }

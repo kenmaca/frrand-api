@@ -1,4 +1,5 @@
 import routes.users
+import routes.addresses
 import routes.apiKeys
 import routes.locations
 import routes.requests
@@ -28,6 +29,7 @@ PUBLIC_ITEM_METHODS = []
 # Routes
 DOMAIN = {
     'users': routes.users.config,
+    'addresses': routes.addresses.config,
     'apiKeys': routes.apiKeys.config,
     'locations': routes.locations.config,
     'requests': routes.requests.config,

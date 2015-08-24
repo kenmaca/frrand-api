@@ -39,7 +39,7 @@ config = {
         }
     },
     'allowed_filters': [],
-    'item_methods': ['PATCH'],
+    'item_methods': ['GET', 'PATCH'],
     'resource_methods': ['GET', 'POST'],
     'schema': schema
 }
