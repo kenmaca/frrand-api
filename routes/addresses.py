@@ -1,3 +1,5 @@
+from geopy.geocoders import GoogleV3
+
 schema = {
     'name': {
         'type': 'string',
@@ -5,8 +7,7 @@ schema = {
     },
     'address': {
         'type': 'string',
-        'regex': '^[0-9]+\s[a-zA-Z0-9\s]+,\s[a-zA-Z\s]+,\s[A-Z]{2}\s[a-zA-Z0-9\s]+,\s[a-zA-Z\s]+$',
-        'required': True
+        'regex': '^[0-9]+\s[a-zA-Z0-9\s]+,\s[a-zA-Z\s]+,\s[A-Z]{2}\s[a-zA-Z0-9\s]+,\s[a-zA-Z\s]+$'
     },
     'phone': {
         'type': 'string',
@@ -14,6 +15,7 @@ schema = {
     },
     'location': {
         'type': 'point',
+        'unique': True,
         'required': True
     },
     'placeId': {
@@ -36,4 +38,24 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
-    pass
+    app.on_insert_addresses += fillInGeocodedAddress
+
+# hooks
+
+# on_insert_addresses
+def fillInGeocodedAddress(addresses):
+    ''' (list of dict) -> NoneType
+    An Eve hook used to fill in the address if missing from a geocoding
+    service.
+    '''
+
+    for address in addresses:
+        if 'address' not in address:
+            try:
+                address['address'] = GoogleV3().reverse(
+                    address['location']['coordinates'][::-1]
+                )[0].address
+            except Exception:
+
+                # TODO: try another geocoding service
+                address['address'] = 'Unknown'

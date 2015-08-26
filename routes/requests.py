@@ -192,10 +192,6 @@ def generateRequestInvites(requests):
                 # on_inserted_requestInvites to get _id
                 resp = post_internal('requestInvites', {
                     'requestId': request['_id'],
-                    'location': {
-                        'type': 'Point',
-                        'coordinates': [0.0, 0.0]
-                    },
                     'from': request['createdBy']
                 })
 

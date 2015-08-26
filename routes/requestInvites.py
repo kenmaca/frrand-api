@@ -4,6 +4,9 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 from lib.gcm import gcmSend
 
+# default expiry time of each requestInvite until deletion in minutes
+DEFAULT_EXPIRY = 15
+
 schema = {
     'requestId': {
         'type': 'objectid',
@@ -13,10 +16,6 @@ schema = {
             'field': '_id'
         }
     },
-    'location': {
-        'type': 'point',
-        'required': True
-    },
     'from': {
         'type': 'objectid',
         'required': True,
@@ -24,6 +23,19 @@ schema = {
             'resource': 'users',
             'field': '_id'
         }
+    },
+    'phone': {
+        'type': 'string'
+    },
+    'phoneMethods': {
+        'type': 'list',
+        'allowed': [
+            'sms',
+            'phone'
+        ],
+        'dependencies': [
+            'phone'
+        ]
     },
     'requestExpiry': {
         'type': 'datetime',
@@ -113,7 +125,7 @@ def requestInviteExpiry(requestInvites):
 
     for requestInvite in requestInvites:
         requestInvite['requestExpiry'] = datetime.utcnow() + timedelta(
-            minutes=15
+            minutes=DEFAULT_EXPIRY
         )
 
 # on_update_requestInvites
@@ -123,6 +135,7 @@ def allowAcceptanceOfRequestInvite(changes, requestInvite):
     by its requestExpiry < currentTime.
     '''
 
+    # TODO: change from Accepted -> Not Accepted case?
     if (('accepted' in changes)
         and (changes['accepted'] and not requestInvite['accepted'])
     ):
@@ -141,15 +154,13 @@ def alertOwnerOfAcceptedRequestInvite(changes, requestInvite):
     if (('accepted' in changes)
         and (changes['accepted'] and not requestInvite['accepted'])
     ):
-        requestOwner = app.data.driver.db['users'].find({
+        requestOwner = app.data.driver.db['users'].find_one({
             '_id': requestInvite['from']
         })
 
         # alert request owner of the acceptance
         gcmSend(requestOwner['deviceId'], {
             'type': 'requestInviteAccepted',
-            'requestInviteAccepted': (lambda a, b: a.update(b) or a)(
-                requestInvite, changes
-            )
+            'requestInviteAccepted': requestInvite['_id']
         })
 
