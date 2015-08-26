@@ -5,6 +5,7 @@ from datetime import datetime
 from pytz import UTC
 from bson import ObjectId
 from lib.gcm import gcmSend
+from pymongo import DESCENDING
 
 schema = {
     'items': {
@@ -109,6 +110,7 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
+    app.on_insert_requests += onInsert
     app.on_inserted_requests += generateRequestInvites
     app.on_pre_GET_requests += forceFetchNewRequests
     app.on_fetched_item_requests += embedRequestDisplay
@@ -170,6 +172,15 @@ def embedRequestDisplay(request):
         # finally, replace output list of invites with embedded ones
         request['inviteIds'] = pendingInvites
 
+# on_insert_requests
+def onInsert(requests):
+    ''' (list of dict) -> NoneType
+    An Eve hook used prior to insertion.
+    '''
+
+    for request in requests:
+        _addDefaultDestination(request)
+
 # on_inserted_requests
 def generateRequestInvites(requests):
     ''' (dict) -> NoneType
@@ -224,3 +235,65 @@ def generateRequestInvites(requests):
             {'$set': {'inviteIds': invitesGenerated}},
             upsert=False, multi=False
         )
+
+# helpers
+
+def _addDefaultDestination(request):
+    ''' (dict) -> NoneType
+    Adds the closest address known to the requester's current location
+    if destination is not specified.
+    '''
+
+    if 'destination' not in request:
+        currentLocation = app.data.driver.db['locations'].find_one(
+            {'createdBy': request['createdBy']},
+            sort=[('_id', DESCENDING)]
+        )
+
+        if currentLocation:
+            closestAddress = app.data.driver.db['addresses'].find_one(
+                {
+                    'createdBy': request['createdBy'],
+                    'location': {
+                        '$near' : {
+                            '$geometry': currentLocation['location']
+                        }
+                    }
+                }
+            )
+
+            # requester has a known address, so include it
+            if closestAddress:
+                request['destination'] = closestAddress['_id']
+
+            # otherwise, create a temporary address based on the user's
+            # current location
+            else:
+                resp = post_internal('addresses', {
+                    'location': currentLocation['location']
+                })
+
+                if resp[3] == 201:
+
+                    # set ownership of invite to invitee
+                    app.data.driver.db['addresses'].update(
+                        {'_id': resp[0]['_id']},
+                        {'$set': {
+                            'createdBy': request['createdBy'],
+                            'temporary': True
+                        }},
+                        upsert=False, multi=False
+                    )
+
+                    # alert owner that an address was created for them
+                    user = app.data.driver.db['users'].find_one(
+                        {'_id': request['createdBy']}
+                    )
+
+                    gcmSend(user['deviceId'], {
+                        'type': 'addressCreated',
+                        'addressCreated': resp[0]['_id']
+                    })
+
+                    # finally, set destination to temporary address
+                    request['destination'] = resp[0]['_id']

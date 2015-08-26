@@ -20,6 +20,11 @@ schema = {
     },
     'placeId': {
         'type': 'string'
+    },
+    'temporary': {
+        'type': 'boolean',
+        'readonly': True,
+        'default': False
     }
 }
 
@@ -29,7 +34,7 @@ config = {
     'public_item_methods': [],
     'allowed_filters': [],
     'item_methods': ['GET', 'PATCH'],
-    'resource_methods': ['GET'],
+    'resource_methods': ['GET', 'POST'],
     'schema': schema
 }
 
