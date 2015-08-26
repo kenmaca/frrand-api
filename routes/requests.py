@@ -5,7 +5,6 @@ from datetime import datetime
 from pytz import UTC
 from bson import ObjectId
 from lib.gcm import gcmSend
-from . requestInvites import embedRequestInviteDisplay
 
 schema = {
     'items': {
@@ -91,8 +90,7 @@ schema = {
             'field': '_id'
         },
 
-        # TODO: remove this and make mandatory when implemented on client side
-        'default': None
+        # TODO: make mandatory when implemented on client side
     }
 }
 
@@ -186,7 +184,9 @@ def generateRequestInvites(requests):
     users = app.data.driver.db['users'].find({})
     for request in requests:
         for user in users:
-            with app.test_request_context():
+
+            # only send active users invites
+            if user['active']:
 
                 # adding to list of inviteIds is dependant on
                 # on_inserted_requestInvites to get _id
@@ -195,29 +195,28 @@ def generateRequestInvites(requests):
                     'from': request['createdBy']
                 })
 
-                # set ownership of invite to invitee
-                app.data.driver.db['requestInvites'].update(
-                    {'_id': resp[0]['_id']},
-                    {'$set': {'createdBy': user['_id']}},
-                    upsert=False, multi=False
-                )
+                if resp[3] == 201:
 
-                # get updated requestInvite
-                requestInvite = app.data.driver.db['requestInvites'].find_one(
-                    {'_id': resp[0]['_id']}
-                )
+                    # set ownership of invite to invitee
+                    app.data.driver.db['requestInvites'].update(
+                        {'_id': resp[0]['_id']},
+                        {'$set': {'createdBy': user['_id']}},
+                        upsert=False, multi=False
+                    )
 
-                # add this invite to the parent request list
-                invitesGenerated.append(requestInvite['_id'])
+                    # get updated requestInvite
+                    requestInvite = app.data.driver.db['requestInvites'].find_one(
+                        {'_id': resp[0]['_id']}
+                    )
 
-                # embed parent request to the newly created requestInvite
-                embedRequestInviteDisplay(requestInvite)
+                    # add this invite to the parent request list
+                    invitesGenerated.append(requestInvite['_id'])
 
-                # and finally, send gcm out
-                gcmSend(user['deviceId'], {
-                    'type': 'requestInvite',
-                    'requestInvite': requestInvite['_id']
-                })
+                    # and finally, send gcm out
+                    gcmSend(user['deviceId'], {
+                       'type': 'requestInvite',
+                       'requestInvite': requestInvite['_id']
+                    })
 
         # update list of inviteIds in Mongo
         app.data.driver.db['requests'].update(

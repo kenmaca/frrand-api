@@ -29,7 +29,7 @@ config = {
     'public_item_methods': [],
     'allowed_filters': [],
     'item_methods': ['GET', 'PATCH'],
-    'resource_methods': ['GET', 'POST'],
+    'resource_methods': ['GET'],
     'schema': schema
 }
 

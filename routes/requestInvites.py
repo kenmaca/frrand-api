@@ -111,10 +111,18 @@ def embedRequestInviteDisplay(request):
         {'_id': request['requestId']}
     )
 
+    # embed destination in parent request
+    if 'destination' in request['requestId']:
+        address = app.data.driver.db['addresses'].find_one({
+            '_id': request['requestId']['destination']
+        })
+
+        request['requestId']['destination'] = address
+
     # embed from (only username here, do not provide entire document)
     request['from'] = app.data.driver.db['users'].find_one(
         {'_id': request['from']}
-    )['username']
+    )['username']    
 
 # on_insert_requestInvites
 def requestInviteExpiry(requestInvites):
