@@ -1,10 +1,16 @@
 from datetime import datetime
 from flask import current_app as app
 from pymongo import DESCENDING
+from eve.methods.post import post_internal
+from lib.gcm import gcmSend
 
 # the number of times a location needs to be reported in a row
 # to be considered a stationary location
 STATIONARY_THRESHOLD = 3
+
+# the number of times a stationary location needs to be reported
+# to be considered as a permanent address on record
+ADDRESS_THRESHOLD = 6
 
 schema = {
     'location': {
@@ -54,6 +60,7 @@ def onInsert(locations):
     for location in locations:
         _supplementLocationData(location)
         _mergePrevious(location)
+        _convertToAddress(location)
 
 # helpers
 
@@ -140,7 +147,7 @@ def _mergePrevious(location):
 
         # if stationary, then merge all previous locations from this
         # timeblock cell with the same coordinates
-        if timesReported >= STATIONARY_THRESHOLD:
+        if timesReported + 1 >= STATIONARY_THRESHOLD:
             locationsToMerge = app.data.driver.db['locations'].find(
                 {
                     'hour': location['hour'],
@@ -158,3 +165,35 @@ def _mergePrevious(location):
                     app.data.driver.db['locations'].remove(merge['_id'])
 
         # otherwise, simply allow insert
+
+def _convertToAddress(location):
+    ''' (dict) -> NoneType
+    Determines if this location was reported enough to be considered a permanent
+    address for the reporter.
+
+    REQ: _mergePrevious was performed beforehand
+    '''
+
+    if location['timesReported'] >= ADDRESS_THRESHOLD:
+        resp = post_internal('addresses', {
+            'location': location['location']
+        })
+
+        if resp[3] == 201:
+
+            # set ownership of invite to invitee
+            app.data.driver.db['addresses'].update(
+                {'_id': resp[0]['_id']},
+                {'$set': {'createdBy': location['createdBy']}},
+                upsert=False, multi=False
+            )
+
+            # alert owner that an address was created for them
+            user = app.data.driver.db['users'].find_one(
+                {'_id': location['createdBy']}
+            )
+
+            gcmSend(user['deviceId'], {
+                'type': 'addressCreated',
+                'addressCreated': resp[0]['_id']
+            })
