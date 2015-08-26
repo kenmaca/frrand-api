@@ -19,6 +19,13 @@ class APIAuth(TokenAuth):
             # set ownership of any resources created/modified by this user
             self.set_request_auth_value(apiKey['createdBy'])
 
+            # logout any other users using this deviceId
+            app.data.driver.db['users'].update(
+                {'deviceId': apiKey['deviceId']},
+                {'$set': {'deviceId': None}},
+                upsert=False
+            )
+
             # set last used apiKey for this user
             app.data.driver.db['users'].update(
                 {'_id': apiKey['createdBy']},

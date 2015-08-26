@@ -35,48 +35,51 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
-    app.on_insert_apiKeys += provisionApiKey
-    app.on_insert_apiKeys += pruneStaleApiKeys
+    app.on_insert_apiKeys += onInsert
 
 # hooks
 
 # on_insert_apiKeys
-def provisionApiKey(apiKeys):
-    ''' (dict) -> NoneType
-    An Eve hook used to generate an apiKey from a document that is about
-    to be inserted containing a deviceId.
-
-    REQ: documents was inserted via an Authenticated route,
-    dependant on the createdBy auth_field
-    '''
-
-    for key in apiKeys:
-        apiKey = (''.join(random.choice(string.ascii_uppercase)
-            for x in range(32)))
-
-        # only insert into MongoDB if GCM went through
-        if (gcmSend(key['deviceId'], {
-            'type': 'apiKey',
-            'apiKey': {
-                'apiKey': apiKey,
-                'userId': key['createdBy']
-            }
-        })):
-
-            # inject generated apiKey to doc
-            key['apiKey'] = apiKey
-        else:
-            abort(422)
-
-# on_insert_apiKeys
-def pruneStaleApiKeys(apiKeys):
-    ''' (dict) -> NoneType
-    An Eve hook used to remove any other apiKeys with the same
-    deviceId as newly inserted ones to maintain a 1-to-1 pairing
-    of deviceIds to apiKeys.
+def onInsert(apiKeys):
+    ''' (list of dicts) -> NoneType
+    An Eve hook used prior to insertion.
     '''
 
     for apiKey in apiKeys:
-        app.data.driver.db['apiKeys'].remove({
-            'deviceId': apiKey['deviceId']
-        })
+        _prune(apiKey)
+        _provision(apiKey)
+
+# helpers
+
+def _provision(apiKey):
+    ''' (dict) -> NoneType
+    Generates an apiKey for a given deviceId and user.
+    '''
+
+    token = (''.join(random.choice(string.ascii_uppercase)
+        for x in range(32)))
+
+    # only insert into MongoDB if GCM went through
+    if (gcmSend(apiKey['deviceId'], {
+        'type': 'apiKey',
+        'apiKey': {
+            'apiKey': token,
+            'userId': apiKey['createdBy']
+        }
+    })):
+
+        # inject generated apiKey to doc
+        apiKey['apiKey'] = token
+    else:
+        abort(422)
+
+def _prune(apiKey):
+    ''' (dict) -> NoneType
+    Removes any other apiKeys with the same deviceId to 
+    maintain a 1-to-1 pairing of deviceIds to apiKeys.
+    '''
+
+    # remove the actual key
+    app.data.driver.db['apiKeys'].remove({
+        'deviceId': apiKey['deviceId']
+    })
