@@ -2,8 +2,7 @@ from gcm import GCM
 from datetime import datetime
 from eve.utils import date_to_rfc1123
 from bson import ObjectId
-
-GCM_API_KEY = 'AIzaSyCvJlZQUf1fEEi0812f_-yNQptbra9IRts'
+from config import GCM_API_KEY
 
 def gcmSend(deviceId, data):
     ''' (list of str, dict) -> bool
