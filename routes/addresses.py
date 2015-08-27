@@ -1,4 +1,5 @@
 from geopy.geocoders import GoogleV3
+from flask import current_app as app
 
 # accuracy to allow range of addresses for given coordinates
 EPSILON = 0.01
