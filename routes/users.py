@@ -37,7 +37,8 @@ config = {
     },
     'datasource': {
         'projection': {
-            'username': 1
+            'username': 1,
+            'active': 1
         }
     },
     'allowed_filters': [],
