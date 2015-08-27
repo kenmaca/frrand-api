@@ -258,7 +258,11 @@ def _addDefaultDestination(request):
                         '$near' : {
                             '$geometry': currentLocation['location']
                         }
-                    }
+                    },
+
+                    # never use temporary addresses (instead, keep creating
+                    # new ones)
+                    'temporary': False
                 }
             )
 
@@ -275,7 +279,7 @@ def _addDefaultDestination(request):
 
                 if resp[3] == 201:
 
-                    # set ownership of invite to invitee
+                    # set ownership of invite to invitee and temporary status
                     app.data.driver.db['addresses'].update(
                         {'_id': resp[0]['_id']},
                         {'$set': {
