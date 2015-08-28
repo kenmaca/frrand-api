@@ -3,6 +3,7 @@ from flask import current_app as app
 from pymongo import DESCENDING
 from eve.methods.post import post_internal
 from lib.gcm import gcmSend
+from shapely.geometry import mapping, shape
 
 # the number of times a location needs to be reported in a row
 # to be considered a stationary location
@@ -11,6 +12,9 @@ STATIONARY_THRESHOLD = 3
 # the number of times a stationary location needs to be reported
 # to be considered as a permanent address on record
 ADDRESS_THRESHOLD = 6
+
+# the maximum number of points to consider for a user's travel region
+LIMIT_REGION = 5
 
 schema = {
     'location': {
@@ -31,6 +35,15 @@ schema = {
         'type': 'integer',
         'readonly': True,
         'default': 1
+    },
+    'region': {
+        'type': 'polygon',
+        'readonly': True
+    },
+    'current': {
+        'type': 'boolean',
+        'readonly': True,
+        'default': True
     }
 }
 
@@ -58,11 +71,25 @@ def onInsert(locations):
     '''
 
     for location in locations:
+        _setCurrent(location)
         _supplementLocationData(location)
         _mergePrevious(location)
         _convertToAddress(location)
+        _buildRegion(location)
 
 # helpers
+
+def _setCurrent(location):
+    ''' (dict) -> NoneType
+    Sets this location as current and previously reported locations
+    as not.
+    '''
+
+    app.data.driver.db['locations'].update(
+        {'createdBy': location['createdBy']},
+        {'$set': {'current': False}},
+        upsert=False
+    )
 
 def _supplementLocationData(location):
     ''' (dict) -> NoneType
@@ -149,8 +176,8 @@ def _mergePrevious(location):
 
 def _convertToAddress(location):
     ''' (dict) -> NoneType
-    Determines if this location was reported enough to be considered a permanent
-    address for the reporter.
+    Determines if this location was reported enough to be considered a
+    permanent address for the reporter.
 
     REQ: _mergePrevious was performed beforehand
     '''
@@ -178,3 +205,48 @@ def _convertToAddress(location):
                 'type': 'addressCreated',
                 'addressCreated': resp[0]['_id']
             })
+
+def _buildRegion(location):
+    ''' (dict) -> NoneType
+    Creates a convex hull of the user's current location, their permanent 
+    addresses, and any frequently visited locations (more than one visit 
+    concurrently) -- which represents likely places the user will visit in
+    the next two hours.
+
+    REQ: _supplementLocationData to be run prior.
+    '''
+
+    # start with current location
+    points = [location['location']['coordinates']]
+
+    # next on priority is known addresses
+    points += [address['location']['coordinates'] for address in 
+        app.data.driver.db['addresses'].find(
+            {'createdBy': location['createdBy'],
+                'temporary': False
+            }
+        )
+    ]
+    
+    # then, frequent locations reported this hour and next
+    points += [reportedLocation['location']['coordinates'] for 
+        reportedLocation in app.data.driver.db['locations'].find(
+            {'createdBy': location['createdBy'],
+                'hour': {'$in': [
+                    location['hour'],
+                    (location['hour'] + 1) % 24,
+                ]},
+                'dayOfWeek': {'$in': [
+                    location['dayOfWeek'],
+                    (location['dayOfWeek'] + 1) if (
+                        (location['hour'] + 1) % 24
+                    ) else location['dayOfWeek']
+                ]}
+            }
+        ).sort('timesReported', DESCENDING)
+    ]
+
+    # limit number of points to LIMIT_REGION and take the convex hull
+    location['region'] = mapping(shape(
+        {'type': 'MultiPoint', 'coordinates': points[:LIMIT_REGION]}
+    ).convex_hull)
