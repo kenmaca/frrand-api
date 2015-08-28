@@ -1,6 +1,7 @@
 from flask import current_app as app
 from flask import abort
 from datetime import datetime, timedelta
+from pytz import UTC
 from bson import ObjectId
 from lib.gcm import gcmSend
 
@@ -147,7 +148,9 @@ def allowAcceptanceOfRequestInvite(changes, requestInvite):
     if (('accepted' in changes)
         and (changes['accepted'] and not requestInvite['accepted'])
     ):
-        if (requestInvite['requestExpiry'] > datetime.utcnow()):
+        if (requestInvite['requestExpiry']
+            < datetime.utcnow().replace(tzinfo=UTC)
+        ):
 
             # invite has expired, force unacceptable
             abort(422)
