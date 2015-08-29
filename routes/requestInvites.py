@@ -144,7 +144,6 @@ def allowAcceptanceOfRequestInvite(changes, requestInvite):
     by its requestExpiry < currentTime.
     '''
 
-    # TODO: change from Accepted -> Not Accepted case?
     if (('accepted' in changes)
         and (changes['accepted'] and not requestInvite['accepted'])
     ):
@@ -154,6 +153,12 @@ def allowAcceptanceOfRequestInvite(changes, requestInvite):
 
             # invite has expired, force unacceptable
             abort(422)
+
+    # once accepted, disallow any changes
+    elif (('accepted' in changes)
+        and (requestInvite['accepted'])
+    ):
+        abort(422)
 
 # on_updated_requestInvites
 def alertOwnerOfAcceptedRequestInvite(changes, requestInvite):
