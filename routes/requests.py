@@ -1,6 +1,7 @@
 from flask import current_app as app
 from flask import abort
 from eve.methods.post import post_internal
+from eve.methods.delete import deleteitem_internal
 from datetime import datetime
 from pytz import UTC
 from bson import ObjectId
@@ -126,8 +127,17 @@ def init(app):
     app.on_inserted_requests += onInserted
     app.on_pre_GET_requests += forceFetchNewRequests
     app.on_fetched_item_requests += embedRequestDisplay
+    app.on_updated_requests += onUpdated
 
 # hooks
+
+# on_updated_requests
+def onUpdated(updated, original):
+    ''' (dict, dict) -> NoneType
+    An Eve hook used after an updated request.
+    '''
+
+    _removeInvites(updated, original)
 
 # on_pre_GET_requests
 def forceFetchNewRequests(request, lookup):
@@ -433,3 +443,16 @@ def _addDefaultDestination(request):
 
                     # finally, set destination to temporary address
                     request['destination'] = resp[0]['_id']
+
+def _removeInvites(updated, original):
+    ''' (dict, dict) -> NoneType
+    Removes any invites from Mongo that don't appear in the
+    updated copy but do in the original.
+    '''
+
+    for invite in original['inviteIds']:
+        if invite not in updated['inviteIds']:
+            deleteitem_internal(
+                'requestInvites',
+                _id=invite
+            )

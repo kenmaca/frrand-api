@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from pytz import UTC
 from bson import ObjectId
 from lib.gcm import gcmSend
+from eve.methods.patch import patch_internal
 
 # default expiry time of each requestInvite until deletion in minutes
 DEFAULT_EXPIRY = 15
@@ -66,7 +67,7 @@ config = {
     'public_item_methods': [],
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
-    'item_methods': ['GET', 'PATCH'],
+    'item_methods': ['GET', 'PATCH', 'DELETE'],
     'schema': schema
 }
 
@@ -80,6 +81,7 @@ def init(app):
     app.on_insert_requestInvites += requestInviteExpiry
     app.on_update_requestInvites += allowAcceptanceOfRequestInvite
     app.on_updated_requestInvites += alertOwnerOfAcceptedRequestInvite
+    app.on_deleted_item_requestInvites += removeFromParentRequest
 
 # hooks
 
@@ -180,3 +182,23 @@ def alertOwnerOfAcceptedRequestInvite(changes, requestInvite):
             'requestInviteAccepted': requestInvite['_id']
         })
 
+# on_deleted_item_requestInvites
+def removeFromParentRequest(requestInvite):
+    ''' (dict) -> NoneType
+    An Eve hook used to remove the requestInvite from the parent request.
+    '''
+
+    request = app.data.driver.db['requests'].find_one(
+        {'_id': requestInvite['requestId']}
+    )
+
+    # remove from parent request if it exists in its list
+    if (request) and (requestInvite['_id'] in request['inviteIds']):
+        request['inviteIds'].remove(requestInvite['_id'])
+
+        # now, update the parent request in Mongo
+        patch_internal(
+            'requests',
+            {'inviteIds': request['inviteIds']},
+            _id=requestInvite['requestId']
+        )
