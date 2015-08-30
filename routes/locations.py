@@ -88,7 +88,7 @@ def _setCurrent(location):
     app.data.driver.db['locations'].update(
         {'createdBy': location['createdBy']},
         {'$set': {'current': False}},
-        upsert=False
+        upsert=False, multi=True
     )
 
 def _supplementLocationData(location):

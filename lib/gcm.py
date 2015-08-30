@@ -4,7 +4,7 @@ from eve.utils import date_to_rfc1123
 from bson import ObjectId
 from config import GCM_API_KEY
 
-def gcmSend(deviceId, data):
+def gcmSend(deviceId, data, ttl=0):
     ''' (list of str, dict) -> bool
     Sends data via GCM to the provided deviceId and returns True
     if it worked.
@@ -15,7 +15,7 @@ def gcmSend(deviceId, data):
         gcmSafe(data)
 
         gcmResult = GCM(GCM_API_KEY).json_request(
-            registration_ids=[deviceId], data=data
+            registration_ids=[deviceId], data=data, time_to_live=ttl
         )
 
         if 'errors' in gcmResult:
