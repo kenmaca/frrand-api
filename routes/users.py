@@ -18,6 +18,23 @@ schema = {
         'type': 'boolean',
         'default': True
     },
+    'phone': {
+        'type': 'string'
+    },
+    'phoneMethods': {
+        'type': 'list',
+        'allowed': [
+            'sms',
+            'phone'
+        ],
+        'dependencies': [
+            'phone'
+        ]
+    },
+    'phoneVerified': {
+        'type': boolean,
+        'readonly': True
+    },
 
     # will be updated on auth success, but does not
     # guarantee that the deviceId is valid and contactable
