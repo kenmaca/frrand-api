@@ -478,8 +478,6 @@ def _removeInvites(updated, original):
     updated copy but do in the original.
     '''
 
-    print('updating request with %s' % str(updated))
-
     if 'inviteIds' in updated:
         for invite in original['inviteIds']:
             if invite not in updated['inviteIds']:

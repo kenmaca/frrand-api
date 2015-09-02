@@ -4,11 +4,6 @@ from flask import current_app as app
 from flask import abort
 from utils.auth import NoAuth
 
-# remove irrelevant schema
-del schema['requestExpiry']
-del schema['accepted']
-del schema['attached']
-
 # add attribute to convert into an accepted requestInvite
 schema['acceptedBy'] = {
     'type': 'objectid',

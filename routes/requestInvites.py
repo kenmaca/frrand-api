@@ -27,6 +27,15 @@ schema = {
             'field': '_id'
         }
     },
+    'accepted': {
+        'type': 'boolean',
+        'default': False
+    },
+    'attached': {
+        'type': 'boolean',
+        'default': False,
+        'readonly': True
+    },
     'phone': {
         'type': 'string'
     },
@@ -50,15 +59,6 @@ schema = {
             'resource': 'users',
             'field': '_id'
         }
-    },
-    'accepted': {
-        'type': 'boolean',
-        'default': False
-    },
-    'attached': {
-        'type': 'boolean',
-        'default': False,
-        'readonly': True
     }
 }
 
