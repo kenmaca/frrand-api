@@ -1,28 +1,56 @@
-from routes.requestInvites import (schema, forceFetchNewRequestInvites,
-    embedRequestInviteDisplay)
 from flask import current_app as app
 from flask import abort
-from utils.auth import NoAuth
 
 # add attribute to convert into an accepted requestInvite
-schema['acceptedBy'] = {
-    'type': 'objectid',
-    'data_relation': {
-        'resource': 'users',
-        'field': '_id'
+schema = {
+    'requestId': {
+        'type': 'objectid',
+        'required': True,
+        'data_relation': {
+            'resource': 'requests',
+            'field': '_id'
+        }
     },
-    'default': None
+    'from': {
+        'type': 'objectid',
+        'required': True,
+        'data_relation': {
+            'resource': 'users',
+            'field': '_id'
+        }
+    },
+    'phone': {
+        'type': 'string'
+    },
+    'phoneMethods': {
+        'type': 'list',
+        'allowed': [
+            'sms',
+            'phone'
+        ],
+        'dependencies': [
+            'phone'
+        ]
+    },
+    'acceptedBy': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'users',
+            'field': '_id'
+        },
+        'default': None
+    }
 }
 
 config = {
     'item_title': 'publicRequestInvite',
-    'public_methods': ['GET'],
-    'public_item_methods': ['GET', 'PATCH'],
+    'public_methods': [],
+    'public_item_methods': [],
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
     'item_methods': ['GET', 'PATCH'],
     'schema': schema,
-    'authentication': NoAuth()
+    'auth_field': None
 }
 
 def init(app):
@@ -30,9 +58,7 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
-    app.on_pre_GET_publicRequestInvites += onPreGet
-    app.on_fetched_item_publicRequestInvites += embedRequestInviteDisplay
-    app.on_updated_publicRequestInvites += onUpdated
+    pass
 
 # on_pre_GET_publicRequestInvites
 def onPreGet(request, lookup):
@@ -40,7 +66,7 @@ def onPreGet(request, lookup):
     An Eve hook used prior to a GET request.
     '''
 
-    forceFetchNewRequestInvites(request, lookup, 'publicRequestInvites')
+    pass
 
 # on_updated_publicRequestInvites
 def onUpdated(changes, publicRequestInvite):

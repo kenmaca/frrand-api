@@ -2,11 +2,13 @@ from flask import current_app as app
 from flask import abort
 from eve.methods.post import post_internal
 from eve.methods.delete import deleteitem_internal
+from eve.methods.patch import patch_internal
 from datetime import datetime
 from pytz import UTC
 from bson import ObjectId
 from lib.gcm import gcmSend
 from pymongo import DESCENDING
+from routes.requestInvites import _isExpired
 
 # number of invites to send at a time
 BATCH_SIZE = 100
@@ -180,15 +182,33 @@ def _embedRequestDisplay(request):
     '''
 
     pendingInvites = []
+    pendingInviteIds = []
     if 'inviteIds' in request:
         for inviteId in request['inviteIds']:
-            pendingInvites.append(
-                app.data.driver.db['requestInvites'].find_one({
-                    '_id': inviteId
-                }
-            ))
+            requestInvite = app.data.driver.db['requestInvites'].find_one({
+                '_id': inviteId
+            })
 
-    request['inviteIds'] = pendingInvites            
+            if not _isExpired(requestInvite):
+                pendingInvites.append(requestInvite)
+                pendingInviteIds.append(requestInvite['_id'])
+
+        # prune expired invites if the inviteIds list changed
+        if pendingInviteIds != request['inviteIds']:
+            patch_internal('requests',
+                {'inviteIds': pendingInviteIds},
+                _id=request['_id']
+            )
+
+            # update publicRequestInviteId if the request was converted
+            publicInvite = app.data.driver.db['publicRequestInvites'].find_one(
+                {'requestId': request['_id']}
+            )
+
+            if publicInvite:
+                request['publicRequestInviteId'] = publicInvite['_id']
+
+    request['inviteIds'] = pendingInvites
 
 # on_insert_requests
 def onInsert(requests):
@@ -454,8 +474,15 @@ def _refreshInvites(request):
         if request['candidates']:
             _generateRequestInvites(request)
 
-        # unclaimed, so create a publicRequestInvite
-        else:
+        # unclaimed, so create a publicRequestInvite if one doesn't
+        # already exist
+        elif not request['publicRequestInviteId']:
+
+            # get a fresh copy since provided one doesn't supply
+            # createdBy
+            request = app.data.driver.db['requests'].find_one({
+                '_id': request['_id']
+            })
             resp = post_internal(
                 'publicRequestInvites', {
                     'requestId': request['_id'],
@@ -481,10 +508,18 @@ def _removeInvites(updated, original):
     if 'inviteIds' in updated:
         for invite in original['inviteIds']:
             if invite not in updated['inviteIds']:
-                deleteitem_internal(
-                    'requestInvites',
-                    _id=invite
-                )
+
+                # TODO: fix hacky direct deletion. should be using
+                # eve.methods.delete.deleteitem_internal instead
+                # to trigger any hooks, but should be safe here
+                # since no hooks need to be called after removing
+                # both from the parent request inviteIds list and
+                # the requestInvite itself.
+                # deleteitem_internal appears to not work when
+                # called within another internal call?
+                app.data.driver.db['requestInvites'].remove({
+                    '_id': invite
+                })
 
         # pump out more invites if the invite list is empty
         original['inviteIds'] = updated['inviteIds']

@@ -87,7 +87,7 @@ def init(app):
 # hooks
 
 # on_pre_GET_requestInvites
-def forceFetchNewRequestInvites(request, lookup, db='requestInvites'):
+def forceFetchNewRequestInvites(request, lookup):
     ''' (Request, dict) -> NoneType
     An Eve hook used to force a fresh fetch when requesting a
     requestInvite document.
@@ -96,22 +96,22 @@ def forceFetchNewRequestInvites(request, lookup, db='requestInvites'):
     if '_id' in lookup:
 
         # update last updated to trigger fresh fetch each time
-        res = app.data.driver.db[db].update(
+        res = app.data.driver.db['requestInvites'].update(
             {'_id': ObjectId(lookup['_id'])},
             {'$set': {'_updated': datetime.utcnow()}},
             upsert=False, multi=False
         )
 
 # on_fetched_item_requestInvites
-def embedRequestInviteDisplay(requestInvite, db='requestInvites'):
+def embedRequestInviteDisplay(requestInvite):
     ''' (dict) -> NoneType
     An Eve hook used to embed requests to its child requestInvites as
     well as to convert all times to strings in RFC-1123 standard.
     request is mutated with new values.
     '''
 
-    # prune if expired (or skip prune if this isn't a requestInvite)
-    if db != 'requestInvites' or not _prune(requestInvite):
+    # prune if expired
+    if not _prune(requestInvite):
 
         # embed parent request
         requestInvite['requestId'] = app.data.driver.db['requests'].find_one(
@@ -210,12 +210,19 @@ def _prune(requestInvite):
     that happened.
     '''
 
-    if (not requestInvite['accepted'] and requestInvite['requestExpiry']
-        < datetime.utcnow().replace(tzinfo=UTC)
-    ):
+    if _isExpired(requestInvite):
         deleteitem_internal(
             'requestInvites',
             _id=requestInvite['_id']
         )
         return True
     return False
+
+def _isExpired(requestInvite):
+    ''' (dict) -> bool
+    Determines if the given requestInvite should be pruned.
+    '''
+
+    return (not requestInvite['accepted'] and requestInvite['requestExpiry']
+        < datetime.utcnow().replace(tzinfo=UTC)
+    )
