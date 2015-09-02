@@ -32,7 +32,7 @@ schema = {
         ]
     },
     'phoneVerified': {
-        'type': boolean,
+        'type': 'boolean',
         'readonly': True
     },
 

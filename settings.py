@@ -4,6 +4,7 @@ import routes.apiKeys
 import routes.locations
 import routes.requests
 import routes.requestInvites
+import routes.publicRequestInvites
 from config import *
 
 # Routes
@@ -13,7 +14,8 @@ DOMAIN = {
     'apiKeys': routes.apiKeys.config,
     'locations': routes.locations.config,
     'requests': routes.requests.config,
-    'requestInvites': routes.requestInvites.config
+    'requestInvites': routes.requestInvites.config,
+    'publicRequestInvites': routes.publicRequestInvites.config
 }
 
 # Utils
@@ -29,3 +31,4 @@ def init(app):
     routes.locations.init(app)
     routes.requests.init(app)
     routes.requestInvites.init(app)
+    routes.publicRequestInvites.init(app)

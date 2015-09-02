@@ -8,6 +8,9 @@ from bson import ObjectId
 from lib.gcm import gcmSend
 from pymongo import DESCENDING
 
+# number of invites to send at a time
+BATCH_SIZE = 100
+
 schema = {
     'items': {
         'type': 'list',
@@ -97,6 +100,14 @@ schema = {
         },
         'default': None
     },
+    'publicRequestInviteId': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'publicRequestInvites',
+            'field': '_id'
+        },
+        'default': None
+    },
     'destination': {
         'type': 'objectid',
         'data_relation': {
@@ -126,7 +137,7 @@ def init(app):
     app.on_insert_requests += onInsert
     app.on_inserted_requests += onInserted
     app.on_pre_GET_requests += forceFetchNewRequests
-    app.on_fetched_item_requests += embedRequestDisplay
+    app.on_fetched_item_requests += onFetchedItem
     app.on_updated_requests += onUpdated
 
 # hooks
@@ -156,43 +167,28 @@ def forceFetchNewRequests(request, lookup):
         )
 
 # on_fetched_item_requests
-def embedRequestDisplay(request):
+def onFetchedItem(request):
     ''' (dict) -> NoneType
-    An Eve hook used to embed requestInvites to its parent request
-    as well as prune the expired and unaccepted invites.
+    An Eve hook used during fetching a request.
+    '''
+
+    _embedRequestDisplay(request)
+
+def _embedRequestDisplay(request):
+    ''' (dict) -> NoneType
+    Embeds requestInvites to its parent request for display.
     '''
 
     pendingInvites = []
     if 'inviteIds' in request:
         for inviteId in request['inviteIds']:
-            requestInvite = app.data.driver.db['requestInvites'].find_one({
-                '_id': inviteId
-            })
-
-            # not accepted and expired, so remove the requestInvite
-            if ((requestInvite['requestExpiry']
-                < datetime.utcnow().replace(tzinfo=UTC))
-                and (not requestInvite['accepted'])
-            ):
-
-                # remove actual requestInvite
-                app.data.driver.db['requestInvites'].remove({
+            pendingInvites.append(
+                app.data.driver.db['requestInvites'].find_one({
                     '_id': inviteId
-                })
-            else:
-                pendingInvites.append(requestInvite)
+                }
+            ))
 
-        # update list of tracked requestInvites in parent request
-        app.data.driver.db['requests'].update(
-            {'_id': request['_id']},
-            {'$set': {'inviteIds':
-                [invite['_id'] for invite in pendingInvites]
-            }},
-            upsert=False, multi=False
-        )
-
-        # finally, replace output list of invites with embedded ones
-        request['inviteIds'] = pendingInvites
+    request['inviteIds'] = pendingInvites            
 
 # on_insert_requests
 def onInsert(requests):
@@ -217,7 +213,7 @@ def onInserted(requests):
 
         # currently just send all invites out rather than one by one
         # for testing
-        _generateRequestInvites(request, invitesInBatch=100)
+        _generateRequestInvites(request, BATCH_SIZE)
 
 # helpers
 
@@ -337,6 +333,9 @@ def _generateRequestInvites(request, invitesInBatch=1):
             '_id': request['candidates'].pop(0)
         })
 
+        # TODO: possible bug, if current batch contains no sendable
+        # invites, then request is hanging around without invites
+
         # only send active users invites
         if candidate['active']:
 
@@ -444,15 +443,54 @@ def _addDefaultDestination(request):
                     # finally, set destination to temporary address
                     request['destination'] = resp[0]['_id']
 
+def _refreshInvites(request):
+    ''' (dict) -> NoneType
+    Generates new requestInvites if the list is empty and there are
+    still candidates. Generates a publicRequestInvite if there are
+    no requestInvites and no more candidates.
+    '''
+
+    if not request['inviteIds']:
+        if request['candidates']:
+            _generateRequestInvites(request)
+
+        # unclaimed, so create a publicRequestInvite
+        else:
+            resp = post_internal(
+                'publicRequestInvites', {
+                    'requestId': request['_id'],
+                    'from': request['createdBy']
+                }
+            )
+
+            if resp[3] == 201:
+                app.data.driver.db['requests'].update(
+                    {'_id': request['_id']},
+                    {'$set': {
+                        'publicRequestInviteId': resp[0]['_id']
+                    }},
+                    upsert=False, multi=False
+                )
+
 def _removeInvites(updated, original):
     ''' (dict, dict) -> NoneType
     Removes any invites from Mongo that don't appear in the
     updated copy but do in the original.
     '''
 
-    for invite in original['inviteIds']:
-        if invite not in updated['inviteIds']:
-            deleteitem_internal(
-                'requestInvites',
-                _id=invite
-            )
+    print('updating request with %s' % str(updated))
+
+    if 'inviteIds' in updated:
+        for invite in original['inviteIds']:
+            if invite not in updated['inviteIds']:
+                deleteitem_internal(
+                    'requestInvites',
+                    _id=invite
+                )
+
+        # pump out more invites if the invite list is empty
+        original['inviteIds'] = updated['inviteIds']
+        _refreshInvites((lambda a, b: a.update(b) or a)(
+           original,
+           updated
+        ))

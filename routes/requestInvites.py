@@ -5,6 +5,7 @@ from pytz import UTC
 from bson import ObjectId
 from lib.gcm import gcmSend
 from eve.methods.patch import patch_internal
+from eve.methods.delete import deleteitem_internal
 
 # default expiry time of each requestInvite until deletion in minutes
 DEFAULT_EXPIRY = 15
@@ -86,7 +87,7 @@ def init(app):
 # hooks
 
 # on_pre_GET_requestInvites
-def forceFetchNewRequestInvites(request, lookup):
+def forceFetchNewRequestInvites(request, lookup, db='requestInvites'):
     ''' (Request, dict) -> NoneType
     An Eve hook used to force a fresh fetch when requesting a
     requestInvite document.
@@ -95,37 +96,42 @@ def forceFetchNewRequestInvites(request, lookup):
     if '_id' in lookup:
 
         # update last updated to trigger fresh fetch each time
-        res = app.data.driver.db['requestInvites'].update(
+        res = app.data.driver.db[db].update(
             {'_id': ObjectId(lookup['_id'])},
             {'$set': {'_updated': datetime.utcnow()}},
             upsert=False, multi=False
         )
 
 # on_fetched_item_requestInvites
-def embedRequestInviteDisplay(request):
+def embedRequestInviteDisplay(requestInvite, db='requestInvites'):
     ''' (dict) -> NoneType
     An Eve hook used to embed requests to its child requestInvites as
     well as to convert all times to strings in RFC-1123 standard.
     request is mutated with new values.
     '''
 
-    # embed parent request
-    request['requestId'] = app.data.driver.db['requests'].find_one(
-        {'_id': request['requestId']}
-    )
+    # prune if expired (or skip prune if this isn't a requestInvite)
+    if db != 'requestInvites' or not _prune(requestInvite):
 
-    # embed destination in parent request
-    if 'destination' in request['requestId']:
-        address = app.data.driver.db['addresses'].find_one({
-            '_id': request['requestId']['destination']
-        })
+        # embed parent request
+        requestInvite['requestId'] = app.data.driver.db['requests'].find_one(
+            {'_id': requestInvite['requestId']}
+        )
 
-        request['requestId']['destination'] = address
+        # embed destination in parent request
+        if 'destination' in requestInvite['requestId']:
+            address = app.data.driver.db['addresses'].find_one({
+                '_id': requestInvite['requestId']['destination']
+            })
 
-    # embed from (only username here, do not provide entire document)
-    request['from'] = app.data.driver.db['users'].find_one(
-        {'_id': request['from']}
-    )['username']    
+            requestInvite['requestId']['destination'] = address
+
+        # embed from (only username here, do not provide entire document)
+        requestInvite['from'] = app.data.driver.db['users'].find_one(
+            {'_id': requestInvite['from']}
+        )['username']
+    else:
+        abort(404)
 
 # on_insert_requestInvites
 def requestInviteExpiry(requestInvites):
@@ -141,30 +147,19 @@ def requestInviteExpiry(requestInvites):
 
 # on_update_requestInvites
 def allowAcceptanceOfRequestInvite(changes, requestInvite):
-    ''' (dict) -> NoneType
+    ''' (dict, dict) -> NoneType
     An Eve hook used to determine if a requestInvite can be accepted or not
     by its requestExpiry < currentTime.
     '''
 
-    if (('accepted' in changes)
-        and (changes['accepted'] and not requestInvite['accepted'])
-    ):
-        if (requestInvite['requestExpiry']
-            < datetime.utcnow().replace(tzinfo=UTC)
-        ):
-
-            # invite has expired, force unacceptable
-            abort(422)
-
-    # once accepted, disallow any changes
-    elif (('accepted' in changes)
-        and (requestInvite['accepted'])
+    if _prune(requestInvite) or ('accepted' in changes
+        and requestInvite['accepted']
     ):
         abort(422)
 
 # on_updated_requestInvites
 def alertOwnerOfAcceptedRequestInvite(changes, requestInvite):
-    ''' (dict) -> NoneType
+    ''' (dict, dict) -> NoneType
     An Eve hook used to alert the request owner of a requestInvite that was
     successfully accepted by the invitee.
     '''
@@ -200,5 +195,27 @@ def removeFromParentRequest(requestInvite):
         patch_internal(
             'requests',
             {'inviteIds': request['inviteIds']},
+
+            # TODO: bug in Eve, reported 2015/09/15 #697
+            # forcing validation to skip
+            skip_validation=True,
             _id=requestInvite['requestId']
         )
+
+# helpers
+
+def _prune(requestInvite):
+    ''' (dict) -> bool
+    Prunes the given requestInvite if it's expired and returns True if
+    that happened.
+    '''
+
+    if (not requestInvite['accepted'] and requestInvite['requestExpiry']
+        < datetime.utcnow().replace(tzinfo=UTC)
+    ):
+        deleteitem_internal(
+            'requestInvites',
+            _id=requestInvite['_id']
+        )
+        return True
+    return False
