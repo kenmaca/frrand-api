@@ -470,6 +470,14 @@ def _refreshInvites(request):
     no requestInvites and no more candidates.
     '''
 
+    # TODO: clean up this hack
+    # supplement createdBy in request if its not present, due to Eve
+    # not providing auth_fields in PATCH's
+    if 'createdBy' not in request:
+        request['createdBy'] = app.data.driver.db['requests'].find_one({
+            '_id': request['_id']
+        })['createdBy']
+
     if not request['inviteIds']:
         if request['candidates']:
             _generateRequestInvites(request)
@@ -477,12 +485,6 @@ def _refreshInvites(request):
         # unclaimed, so create a publicRequestInvite if one doesn't
         # already exist
         elif not request['publicRequestInviteId']:
-
-            # get a fresh copy since provided one doesn't supply
-            # createdBy
-            request = app.data.driver.db['requests'].find_one({
-                '_id': request['_id']
-            })
             resp = post_internal(
                 'publicRequestInvites', {
                     'requestId': request['_id'],
@@ -521,9 +523,12 @@ def _removeInvites(updated, original):
                     '_id': invite
                 })
 
-        # pump out more invites if the invite list is empty
+        # updating inviteIds list for _refreshInvites
         original['inviteIds'] = updated['inviteIds']
-        _refreshInvites((lambda a, b: a.update(b) or a)(
-           original,
-           updated
-        ))
+    
+
+    # pump out more invites if the inviteIds list is empty    
+    _refreshInvites((lambda a, b: a.update(b) or a)(
+        original,
+        updated
+    ))
