@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 class MongoORM:
     ''' A Object-Relational Model to a document in MongoDB.
     '''
@@ -85,7 +87,7 @@ class MongoORM:
         Gets the ObjectId associated with this MongoORM.
         '''
 
-        return self._original['_id']
+        return self.getOriginal('_id')
 
     def set(self, field, value):
         ''' (MongoORM, object, object) -> MongoORM
@@ -102,8 +104,8 @@ class MongoORM:
 
         # replicate in current
         if field not in self._current:
-            self._current[field] = list(self._original[field])
-        return self._current[field]
+            self.set(field, self.getOriginal(field))
+        return self.get(field)
 
     def push(self, field, value):
         ''' (MongoORM, object, object) -> MongoORM
@@ -134,4 +136,4 @@ class MongoORM:
         Gets the original value of field before any uncommitted changes.
         '''
 
-        return self._original.get(field)
+        return deepcopy(self._original.get(field))
