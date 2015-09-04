@@ -1,37 +1,59 @@
 from copy import deepcopy
+from bson import ObjectId
 
 class MongoORM:
     ''' A Object-Relational Model to a document in MongoDB.
     '''
 
-    def __init__(self, source, **fields):
-        ''' (MongoORM, pymongo.collection.Collection) -> MongoORM
+    def __init__(self, db, collection, **fields):
+        ''' (MongoORM, pymongo.database.Database, str) -> MongoORM
         Produces a MongoORM from key-value pairs in fields existing in the 
-        Collection source in a MongoDB database.
+        Database db in a MongoDB database.
         '''
 
         # require all MongoORMs have _ids
         if '_id' not in fields:
             raise ValueError('Missing ObjectId')
 
-        self.source, self._original = source, fields
+        self.source, self._original, self.db = db[collection], fields, db
         self.reset()
 
     @staticmethod
-    def fromObjectId(source, objectId, resultantClass):
-        ''' (pymongo.collection.Collection, bson.ObjectId, MongoORM) -> MongoORM
-        Creates a MongoORM directly from the Mongo collection in source with
+    def findOne(db, resultantClass, **query):
+        ''' (pymongo.database.Database, MongoORM) -> MongoORM
+        Creates a MongoORM directly from the Mongo database in db with
+        query arguments in the resultantClass.
+        '''
+
+        objectData = db[resultantClass.collection].find_one(query)
+        if objectData:
+            return resultantClass(
+                db,
+                resultantClass.collection,
+                **objectData
+            )
+
+        # non-existant objectId
+        raise KeyError('No such document in %s' % (
+            str(db[resultantClass.collection])
+        ))
+
+    @staticmethod
+    def fromObjectId(db, objectId, resultantClass):
+        ''' (pymongo.database.Database, bson.ObjectId, MongoORM) -> MongoORM
+        Creates a MongoORM directly from the Mongo database in db with
         the ObjectId of objectId in the resultantClass.
         '''
 
-        objectData = source.find_one({'_id': objectId})
-        if objectData:
-            return resultantClass(source, **objectData)
-
-        # non-existant objectId
-        raise KeyError('%s does not exist in %s' % (
-            str(objectId), str(source)
-        ))
+        return MongoORM.findOne(
+            db,
+            resultantClass,
+            _id=(
+                objectId
+                if isinstance(objectId, ObjectId)
+                else ObjectId(objectId)
+            )
+        )
 
     def reset(self, forward=False):
         ''' (MongoORM) -> MongoORM
@@ -137,3 +159,21 @@ class MongoORM:
         '''
 
         return deepcopy(self._original.get(field))
+
+    def exists(self, field):
+        ''' (MongoORM, object) -> bool
+        Determines if the field exists in this MongoORM.
+        '''
+
+        try:
+            self.get(field)
+            return True
+        except KeyError:
+            return False
+
+    def increment(field, step=1):
+        ''' (MongoORM, object, int) -> MongoORM
+        Adds step to the int at field.
+        '''
+
+        self.set(field, self.get(field) + step)
