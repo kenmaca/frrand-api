@@ -13,9 +13,10 @@ class User(MongoORM):
         return MongoORM.fromObjectId(source, objectId, User)
 
     def selfOwn(self):
-        ''' (User) -> NoneType
+        ''' (User) -> User
         Sets the owner of this User to itself. Generally used on creation
         of a new User in Mongo.
         '''
 
-        self['createdBy'] = self.getId()
+        self.set('createdBy', self.getId())
+        return self

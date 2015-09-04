@@ -32,7 +32,7 @@ class MongoORM:
         ))
 
     def reset(self, forward=False):
-        ''' (MongoORM) -> NoneType
+        ''' (MongoORM) -> MongoORM
         Sets the both states of this MongoORM to the current state if forward
         is True, otherwise back to the original state.
         '''
@@ -40,6 +40,7 @@ class MongoORM:
         if forward:
             self._original.update(self._current)
         self._current = {}
+        return self
 
     def diff(self):
         ''' (MongoORM) -> dict
@@ -50,7 +51,7 @@ class MongoORM:
         return self._current
 
     def commit(self):
-        ''' (MongoORM) -> NoneType
+        ''' (MongoORM) -> MongoORM
         Updates this MongoORM's document in its linked collection.
         '''
 
@@ -69,13 +70,15 @@ class MongoORM:
 
             # all changes committed, so reset to current
             self.reset(True)
+        return self
 
     def remove(self):
-        ''' (MongoORM) -> NoneType
+        ''' (MongoORM) -> MongoORM
         Removes this MongoORM from the database completely.
         '''
 
         self.source.remove({'_id': self.getId()})
+        return self
 
     def getId(self):
         ''' (MongoORM) -> ObjectId
