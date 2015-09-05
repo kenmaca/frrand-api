@@ -33,7 +33,7 @@ class Location(MongoORM):
 
         self.source.update(
             {
-                'createdBy': location['createdBy'],
+                'createdBy': self.get('createdBy'),
                 'current': True
             },
             {'$set': {'current': False}},
@@ -101,7 +101,7 @@ class Location(MongoORM):
             timesReported = 0
             if lastReportedLocations:
                 for lastReported in lastReportedLocations:
-                    if lastReported['location'] == location['location']:
+                    if lastReported['location'] == self.get('location'):
                         timesReported += lastReported['timesReported']
                     else:
 
@@ -148,7 +148,7 @@ class Location(MongoORM):
         points = [self.get('location')['coordinates']]
 
         # next on priority is known addresses
-        points += [address['location']['coordinates'] for address in 
+        points += [address.get('location')['coordinates'] for address in 
             owner.getAddresses()
         ]
         
