@@ -40,6 +40,7 @@ class Location(MongoORM):
             upsert=False, multi=True
         )
         self.set('current', True)
+        return self
 
     def supplementCurrentTime(self):
         ''' (Location) -> Location
@@ -48,6 +49,7 @@ class Location(MongoORM):
 
         self.set('dayOfWeek', datetime.utcnow().isoweekday())
         self.set('hour', datetime.utcnow().hour)
+        return self
 
     def approximate(self, accuracy):
         ''' (Location, int) -> Location
