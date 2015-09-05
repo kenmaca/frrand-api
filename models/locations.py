@@ -10,13 +10,6 @@ class Location(MongoORM):
 
     collection = 'locations'
 
-    def __init__(self, db, **fields):
-        ''' (Location, pymongo.database.Database) -> Location
-        Instantiates a new Location.
-        '''
-
-        MongoORM.__init__(self, db, Location.collection, **fields)
-
     @staticmethod
     def findOne(db, **query):
         ''' (pymongo.database.Database, bson.ObjectId) -> Location
@@ -58,8 +51,8 @@ class Location(MongoORM):
         '''
 
         geoJson = self.get('location')
-        geoJson['location']['coordinates'] = [round(point, accuracy)
-            for point in geoJson['location']['coordinates']]
+        geoJson['coordinates'] = [round(point, accuracy)
+            for point in geoJson['coordinates']]
         self.set('location', geoJson)
         return self
 
@@ -144,7 +137,7 @@ class Location(MongoORM):
         REQ: mergePrevious was run previously
         '''
 
-        owner = User.fromObjectId(self.get('createdBy'))
+        owner = User.fromObjectId(self.db, self.get('createdBy'))
 
         # start with current location
         points = [self.get('location')['coordinates']]

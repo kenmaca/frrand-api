@@ -7,13 +7,6 @@ class Address(MongoORM):
 
     collection = 'addresses'
 
-    def __init__(self, db, **fields):
-        ''' (Address, pymongo.database.Database) -> Address
-        Instantiates a new Address.
-        '''
-
-        MongoORM.__init__(self, db, Address.collection, **fields)
-
     @staticmethod
     def fromObjectId(db, objectId):
         ''' (pymongo.database.Database, bson.ObjectId) -> Address

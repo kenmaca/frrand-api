@@ -7,13 +7,6 @@ class User(MongoORM):
 
     collection = 'users'
 
-    def __init__(self, db, **fields):
-        ''' (User, pymongo.database.Database) -> User
-        Instantiates a new User.
-        '''
-
-        MongoORM.__init__(self, db, User.collection, **fields)
-
     @staticmethod
     def fromObjectId(db, objectId):
         ''' (pymongo.database.Database, bson.ObjectId) -> User
@@ -36,7 +29,7 @@ class User(MongoORM):
         Obtains a listing of Addresses owned by this User.
         '''
 
-        return [Address(db, **address) for address in 
+        return [Address(self.db, Address.collection, **address) for address in 
             self.db[Address.collection].find(
                 {
                     'createdBy': self.getId(),

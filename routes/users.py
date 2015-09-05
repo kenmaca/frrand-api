@@ -85,4 +85,4 @@ def onInserted(users):
     for user in users:
 
         # set newly created user as self-owning
-        User(app.data.driver.db, **user).selfOwn().commit()
+        User(app.data.driver.db, User.collection, **user).selfOwn().commit()

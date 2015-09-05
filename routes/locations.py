@@ -77,7 +77,7 @@ def onInserted(locations):
 
     for location in locations:
         _convertToAddress(
-            Location(app.data.driver.db, **location)
+            Location(app.data.driver.db, Location.collection, **location)
             .setCurrent()
             .mergePrevious(STATIONARY_THRESHOLD, ACCURACY)
             .buildTravelRegion(LIMIT_REGION)

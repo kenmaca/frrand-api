@@ -152,14 +152,17 @@ class MongoORM:
         Gets the current value of field.
         '''
 
-        return self._current.get(field, self.getOriginal(field))
+        try:
+            return self._current[field]
+        except KeyError:
+            return self.getOriginal(field)
 
     def getOriginal(self, field):
         ''' (MongoORM, object) -> object
         Gets the original value of field before any uncommitted changes.
         '''
 
-        return deepcopy(self._original.get(field))
+        return deepcopy(self._original[field])
 
     def exists(self, field):
         ''' (MongoORM, object) -> bool
