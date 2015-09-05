@@ -16,6 +16,9 @@ ADDRESS_THRESHOLD = 6
 # the maximum number of points to consider for a user's travel region
 LIMIT_REGION = 5
 
+# the degree of accuracy of each coordinate pair reported
+ACCURACY = 4
+
 schema = {
     'location': {
         'type': 'point',
