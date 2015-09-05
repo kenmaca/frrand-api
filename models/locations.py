@@ -4,11 +4,6 @@ from datetime import datetime
 from pymongo import DESCENDING
 from shapely.geometry import mapping, shape
 
-ACCURACY = 4
-STATIONARY_THRESHOLD = 3
-ADDRESS_THRESHOLD = 6
-LIMIT_REGION = 5
-
 class Location(MongoORM):
     ''' A representation of a Location in Frrand.
     '''
@@ -37,7 +32,10 @@ class Location(MongoORM):
         '''
 
         self.source.update(
-            {'createdBy': location['createdBy']},
+            {
+                'createdBy': location['createdBy'],
+                'current': True
+            },
             {'$set': {'current': False}},
             upsert=False, multi=True
         )
@@ -63,8 +61,8 @@ class Location(MongoORM):
         self.set('location', geoJson)
         return self
 
-    def mergePrevious(self, threshold):
-        ''' (Location) -> Location
+    def mergePrevious(self, threshold, accuracy):
+        ''' (Location, int, int) -> Location
         Converts a regular reported location to a stationary
         one if the location was reported threshold times in a row,
         or increments the timesReported if there is currently already a 
@@ -72,21 +70,22 @@ class Location(MongoORM):
         '''
 
         # prepare this Location just in case
-        self.approximate(ACCURACY)
+        self.approximate(accuracy)
         if not self.exists('dayOfWeek') or not self.exists('hour'):
             self.supplementCurrentTime()
 
-        # check if there is already a stationary location for these coordinates
-        stationary = Location.findOne(
-            self.db,
-            hour=self.get('hour'),
-            dayOfWeek=self.get('dayOfWeek'),
-            location=self.get('location'),
-            timesReported={'$gt': 1},
-            createdBy=self.get('createdBy')
-        )
-
         try:
+
+            # check if there is already a stationary location for these
+            # coordinates
+            stationary = Location.findOne(
+                self.db,
+                hour=self.get('hour'),
+                dayOfWeek=self.get('dayOfWeek'),
+                location=self.get('location'),
+                timesReported={'$gt': 1},
+                createdBy=self.get('createdBy')
+            )
 
             # merge with stationary and remove older location
             self.increment('timesReported', stationary.get('timesReported'))
@@ -97,7 +96,7 @@ class Location(MongoORM):
             # never stationary, so check if it is now
             lastReportedLocations = self.source.find(
                 {'createdBy': self.get('createdBy')}
-            ).sort('_id', DESCENDING).limit(STATIONARY_THRESHOLD)
+            ).sort('_id', DESCENDING).limit(threshold)
 
             timesReported = 0
             if lastReportedLocations:
@@ -111,7 +110,7 @@ class Location(MongoORM):
 
             # if stationary, then merge all previous locations from this
             # timeblock cell with the same coordinates
-            if timesReported + 1 >= STATIONARY_THRESHOLD:
+            if timesReported >= threshold:
                 locationsToMerge = self.source.find(
                     {
                         'hour': self.get('hour'),
@@ -131,12 +130,10 @@ class Location(MongoORM):
                         )
                         merge.remove()
 
-            # otherwise, simply allow insert
-
         return self
 
-    def buildTravelRegion(self):
-        ''' (Location) -> Location
+    def buildTravelRegion(self, limitRegion):
+        ''' (Location, int) -> Location
         Creates a convex hull of this Location, the owner's permanent 
         addresses, and any frequently visited locations (more than one visit 
         concurrently) -- which represents likely places the owner will visit in
@@ -177,7 +174,7 @@ class Location(MongoORM):
         self.set(
             'region',
             mapping(shape(
-                {'type': 'MultiPoint', 'coordinates': points[:LIMIT_REGION]}
+                {'type': 'MultiPoint', 'coordinates': points[:limitRegion]}
             ).convex_hull)
         )
 
