@@ -80,7 +80,7 @@ class MongoORM:
         '''
 
         if (self._original != self._current):
-            self.source.update_one(
+            self.source.update(
                 {
                     '_id': self.getId()
                 },
@@ -89,7 +89,8 @@ class MongoORM:
                     # only set the differences between the original 
                     # and current set
                     '$set': self.diff()
-                }
+                },
+                upsert=False, multi=False
             )
 
             # all changes committed, so reset to current
