@@ -115,7 +115,7 @@ class Location(MongoORM):
                     {
                         'hour': self.get('hour'),
                         'dayOfWeek': self.get('dayOfWeek'),
-                        'location': self.get('location']),
+                        'location': self.get('location'),
                         'createdBy': self.get('createdBy')
                     }
                 )
