@@ -163,13 +163,13 @@ class Location(MongoORM):
                     ]}
                 }
             ).sort('timesReported', DESCENDING)
-        ]
+        ][:limitRegion]
 
         # limit number of points to LIMIT_REGION and take the convex hull
         self.set(
             'region',
             mapping(shape(
-                {'type': 'MultiPoint', 'coordinates': points[:limitRegion]}
+                {'type': 'MultiPoint', 'coordinates': points}
             ).convex_hull)
         )
 
