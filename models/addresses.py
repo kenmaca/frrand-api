@@ -15,6 +15,14 @@ class Address(MongoORM):
 
         return MongoORM.fromObjectId(db, objectId, Address)
 
+    @staticmethod
+    def findOne(db, **query):
+        ''' (pymongo.database.Database) -> Address
+        Finds a single Address given query.
+        '''
+
+        return MongoORM.findOne(db, Address, **query)
+
     def geocodeAddress(self):
         ''' (Address) -> Address
         Fills in the address if missing from a geocoding service.
@@ -32,5 +40,26 @@ class Address(MongoORM):
 
                 # TODO: try another geocoding service
                 address['address'] = 'Unknown'
+
+        return self
+
+    def changeAddress(self, address, eps):
+        ''' (Address, str, float) -> Address
+        Changes the address for this Address.
+        '''
+
+        geo = GoogleV3().geocode(address)
+        if not (
+            (
+                abs(geo.longitude - self.get('location')['coordinates'][0]) 
+                < eps
+            ) and (
+                abs(geo.latitude - self.get('location')['coordinates'][1])
+                < eps
+            )
+        ):
+            self.set('address', address)
+        else:
+            raise AttributeError('Address not within the allowed boundaries')
 
         return self

@@ -1,8 +1,10 @@
 from flask import current_app as app
 from flask import abort
-from eve.methods.patch import patch_internal
+from models.requests import Request
+from models.requestInvites import Invite
+from models.publicRequestInvites import PublicInvite
+from routes.requests import _generateRequestInvites
 
-# add attribute to convert into an accepted requestInvite
 schema = {
     'requestId': {
         'type': 'objectid',
@@ -60,6 +62,8 @@ def init(app):
     '''
 
     app.on_updated_publicRequestInvites += onUpdated
+    app.on_pre_GET_publicRequestInvites += onPreGet
+    app.on_fetched_item_publicRequestInvites += onFetchedItem
 
 # on_pre_GET_publicRequestInvites
 def onPreGet(request, lookup):
@@ -67,76 +71,69 @@ def onPreGet(request, lookup):
     An Eve hook used prior to a GET request.
     '''
 
-    pass
+    if '_id' in lookup:
+
+        # update last updated to trigger fresh fetch each time
+        (PublicInvite.fromObjectId(app.data.driver.db, lookup['_id'])
+            .set('_updated': datetime.utcnow()).commit()
+        )
+
+# on_fetched_item_publicRequestInvites
+def onFetchedItem(publicInvite):
+    ''' (dict) -> NoneType
+    An Eve hook used to embed requests to its child requestInvites as
+    well as to convert all times to strings in RFC-1123 standard.
+    '''
+
+    publicInvite.update(
+        PublicInvite(
+            app.data.driver.db,
+            PublicInvite.collection,
+            **publicInvite
+        ).embedView()
+    )
 
 # on_updated_publicRequestInvites
-def onUpdated(changes, publicRequestInvite):
+def onUpdated(changes, publicInvite):
     ''' (dict, dict) -> NoneType
     An Eve hook used after a publicRequestInvite is updated.
     '''
 
-    print('updated')
-    _convertToAcceptedInvite(changes, publicRequestInvite)
+    if 'acceptedBy' in changes:
+        _convertToAcceptedInvite(
+            PublicInvite.fromObjectId(publicInvite['_id'])
+        )
 
 # helpers
 
-def _convertToAcceptedInvite(changes, publicRequestInvite):
-    ''' (dict, dict) -> NoneType
-    Converts an unclaimed publicRequestInvite to an accepted requestInvite.
+def _createAcceptedInvite(publicInvite):
+    ''' (models.publicRequestInvite.PublicInvite) -> NoneType
+    Creates an pre-accepted Invite.
     '''
 
-    # ensure that parent request is really attached to this public
-    # request before doing anything
-    request = app.data.driver.db['requests'].find_one({
-        '_id': publicRequestInvite['requestId'],
-        'publicRequestInviteId': publicRequestInvite['_id']
-    })
+    try:
+        request = Request.findOne(
+            app.data.driver.db,
+            _id=publicInvite.get('requestId'),
+            publicRequestInviteId=publicInvite.getId()
+        )
 
-    print(changes)
+        if publicInvite.get('acceptedBy'):
 
-    if request:
-        if 'acceptedBy' in changes:
+            # adding candidate to prep generation of invite
+            request.push('candidate', publicInvite.get('acceptedBy')).commit()
 
-            print('public invite accepted')
+            # generate invites
+            _generateRequestInvites(request)
+    
+            # set accepted on the newly generated invite
+            Invite.findOne(
+                app.data.driver.db,
+                requestId=request.getId()
+            ).accept().commit()
 
-            # since candidates is readonly, hacky way of adding candidate
-            app.data.driver.db['requests'].update(
-                {'_id': request['_id']},
-                {
-                    '$set': {'publicRequestInviteId': None},
-                    '$push': {'candidates': changes['acceptedBy']}
-                },
-                upsert=False, multi=False
-            )
+            # finally, allow others to accept this PublicInvite too
+            publicInvite.set('acceptedBy', None).commit()
 
-            print('mongo op internal, now external')
-
-            # and then let patch_internal handle the generation of invites
-            resp = patch_internal('requests',
-                {'inviteIds': []},
-                _id=request['_id']
-            )
-
-            print(resp)
-
-            if resp[3] == 200:
-
-                # now delete this publicInviteRequest since we have
-                # an candidate that accepted the request on their own
-                app.data.driver.db['publicRequestInvites'].remove({
-                    '_id': publicRequestInvite['_id']
-                })
-
-                # and finally, set accepted on the (assuming single, since 
-                # previously public) newly generated invite
-                requestInvite = app.data.driver.db['requestInvites'].find_one({
-                    'requestId': request['_id']
-                })
-
-                if requestInvite:
-                    patch_internal('requestInvites',
-                        {'accepted': True},
-                        _id=requestInvite['_id']
-                    )
-    else:
+    except KeyError:
         abort(422)

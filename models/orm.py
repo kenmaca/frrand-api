@@ -1,5 +1,6 @@
 from copy import deepcopy
 from bson import ObjectId
+from pymongo import DESCENDING
 
 class MongoORM:
     ''' A Object-Relational Model to a document in MongoDB.
@@ -25,7 +26,12 @@ class MongoORM:
         query arguments in the resultantClass.
         '''
 
-        objectData = db[resultantClass.collection].find_one(query)
+        objectData = db[resultantClass.collection].find_one(
+            query,
+
+            # in case of tiebreakers, get the newest one
+            sort=[('_id', DESCENDING)]
+        )
         if objectData:
             return resultantClass(
                 db,
@@ -181,3 +187,18 @@ class MongoORM:
         '''
 
         self.set(field, self.get(field) + step)
+
+    def view(self):
+        ''' (MongoORM) -> dict
+        Returns a dictionary of this MongoORM.
+        '''
+
+        return dict(self._original).update(self._current)
+
+    def update(self, patch):
+        ''' (MongoORM, dict) -> MongoORM
+        Replaces the _current dictionary with patch.
+        '''
+
+        self._current = patch
+        return self

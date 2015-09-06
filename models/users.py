@@ -1,5 +1,8 @@
 from models.orm import MongoORM
 from models.addresses import Address
+from models.locations import Location
+from pymongo import DESCENDING
+from lib.gcm import gcmSend
 
 class User(MongoORM):
     ''' A representation of an User in Frrand.
@@ -25,7 +28,7 @@ class User(MongoORM):
         return self
 
     def getAddresses(self, temporary=False):
-        ''' (User) -> list of models.addresses.addresses
+        ''' (User, bool) -> list of models.addresses.addresses
         Obtains a listing of Addresses owned by this User.
         '''
 
@@ -37,3 +40,42 @@ class User(MongoORM):
                 }
             )
         ]
+
+    def message(self, messageType, message, deviceId=False):
+        ''' (User, str, object) -> bool
+        Sends a message to the last known device via GCM, or else
+        deviceId if provided.
+        '''
+
+        return gcmSend(
+            deviceId if deviceId else self.get('deviceId'),
+            {
+                'type': messageType,
+                messageType: message
+            }
+        )
+
+    def useAPIKey(self, apiKey):
+        ''' (User, models.apikeys.APIKey) -> User
+        Updates the last known deviceId for this User.
+        '''
+
+        self.set('deviceId', apiKey.get('deviceId'))
+        return self
+
+    def isActive(self):
+        ''' (User) -> bool
+        Determines whether or not this User is accepting request invites.
+        '''
+
+        return self.get('active')
+
+    def getLastLocation(self):
+        ''' (User) -> models.locations.Location
+        Gets the last reported Location for this User.
+        '''
+
+        try:
+            return Location.findOne(self.db, createdBy=self.getId())
+        except ValueError:
+            return

@@ -107,13 +107,10 @@ def _convertToAddress(location):
             )
 
             # alert owner that an address was created for them
-            gcmSend(
-                User.fromObjectId(
-                    app.data.driver.db,
-                    address.get('createdBy')
-                ).get('deviceId'),
-                {
-                    'type': 'addressCreated',
-                    'addressCreated': address.getId()
-                }
+            User.fromObjectId(
+                app.data.driver.db,
+                location.get('createdBy')
+            ).message(
+                'addressCreated',
+                address.getId()
             )

@@ -1,7 +1,8 @@
 from utils.auth import UserAuth
 from flask import current_app as app
 from flask import abort
-from lib.gcm import gcmSend
+from models.apikeys import APIKey
+from models.users import User
 import random
 import string
 
@@ -36,6 +37,7 @@ def init(app):
     '''
 
     app.on_insert_apiKeys += onInsert
+    app.on_inserted_apiKeys += onInserted
 
 # hooks
 
@@ -46,8 +48,16 @@ def onInsert(apiKeys):
     '''
 
     for apiKey in apiKeys:
-        _prune(apiKey)
         _provision(apiKey)
+
+# on_inserted_apiKeys
+def onInserted(apiKeys):
+    ''' (list of dicts) -> NoneType
+    An Eve hook used after insertion.
+    '''
+
+    for apiKey in apiKeys:
+        APIKey(app.data.driver.db, APIKey.collection, **apiKey).prune()
 
 # helpers
 
@@ -58,28 +68,19 @@ def _provision(apiKey):
 
     token = (''.join(random.choice(string.ascii_uppercase)
         for x in range(32)))
+    user = User.fromObjectId(app.data.driver.db, apiKey['createdBy'])
 
     # only insert into MongoDB if GCM went through
-    if (gcmSend(apiKey['deviceId'], {
-        'type': 'apiKey',
-        'apiKey': {
+    if user.message(
+        'apiKey',
+        {
             'apiKey': token,
-            'userId': apiKey['createdBy']
-        }
-    })):
+            'userId': user.getId()
+        },
+        apiKey['deviceId']
+    ):
 
         # inject generated apiKey to doc
         apiKey['apiKey'] = token
     else:
         abort(422)
-
-def _prune(apiKey):
-    ''' (dict) -> NoneType
-    Removes any other apiKeys with the same deviceId to 
-    maintain a 1-to-1 pairing of deviceIds to apiKeys.
-    '''
-
-    # remove the actual key
-    app.data.driver.db['apiKeys'].remove({
-        'deviceId': apiKey['deviceId']
-    })

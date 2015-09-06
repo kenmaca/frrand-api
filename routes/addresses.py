@@ -1,8 +1,9 @@
-from geopy.geocoders import GoogleV3
 from flask import current_app as app
+from models.addresses import Address
 
 # accuracy to allow range of addresses for given coordinates
-EPSILON = 0.01
+EPSILON = 0.001
+DECIMAL_PLACES = 3
 
 schema = {
     'name': {
@@ -11,7 +12,11 @@ schema = {
     },
     'address': {
         'type': 'string',
-        'regex': '^[0-9]+\s[a-zA-Z0-9\s]+,\s[a-zA-Z\s]+,\s[A-Z]{2}\s[a-zA-Z0-9\s]+,\s[a-zA-Z\s]+$'
+        'regex': (
+            '^[0-9]+\s[a-zA-Z0-9\s]+,'
+            + '\s[a-zA-Z\s]+,'
+            + '\s[A-Z]{2}\s[a-zA-Z0-9\s]+,'
+            + '\s[a-zA-Z\s]+$'
     },
     'phone': {
         'type': 'string',
@@ -47,6 +52,7 @@ def init(app):
     '''
 
     app.on_insert_addresses += onInsert
+    app.on_inserted_addresses += onInserted
     app.on_update_addresses += onUpdate
 
 # hooks
@@ -57,11 +63,18 @@ def onUpdate(updates, originalAddress):
     An Eve hook used prior to update.
     '''
 
-    _coordinatesReadOnly(updates)
-    _verifyAddress((lambda a, b: a.update(b) or a)(
-        originalAddress,
-        updates
-    ))
+    # prevent changing of coordinates
+    if 'location' in updates:
+        abort(422)
+
+    # prevent address changes outside boundaries
+    elif 'address' in updates:
+        try:
+            (Address.fromObjectId(app.data.driver.db, originalAddress['_id'])
+                .changeAddress(updates['address'], EPSILON)
+            )
+        except AttributeError:
+            abort(422)
 
 # on_insert_addresses
 def onInsert(addresses):
@@ -70,10 +83,32 @@ def onInsert(addresses):
     '''
 
     for address in addresses:
+        _approximate(address)
         _uniquePermanent(address)
-        _fillInGeocodedAddress(address)
+
+# on_inserted_addresses
+def onInserted(addresses):
+    ''' (list of dict) -> NoneType
+    An Eve hook used after insertion.
+    '''
+
+    for address in addresses:
+        (Address(app.data.driver.db, Address.collection, **address)
+            .geocodeAddress()
+            .commit()
+        )
 
 # helpers
+
+def _approximate(address):
+    ''' (dict) -> NoneType
+    Approximates the address coordinates within DECIMAL_PLACES accuracy.
+    '''
+
+    address['location']['coordinates'] = [
+        round(address['location']['coordinates'][0], DECIMAL_PLACES),
+        round(address['location']['coordinates'][1], DECIMAL_PLACES)
+    ]
 
 def _uniquePermanent(address):
     ''' (dict) -> NoneType
@@ -89,45 +124,4 @@ def _uniquePermanent(address):
     })
 
     if existing:
-        abort(422)
-
-def _fillInGeocodedAddress(address):
-    ''' (dict) -> NoneType
-    Fills in the address if missing from a geocoding service.
-    '''
-
-    if 'address' not in address:
-        try:
-            address['address'] = GoogleV3().reverse(
-                address['location']['coordinates'][::-1]
-            )[0].address
-        except Exception:
-
-            # TODO: try another geocoding service
-            address['address'] = 'Unknown'
-    else:
-        _verifyAddress(address)
-
-def _verifyAddress(address):
-    ''' (dict) -> NoneType
-    Verifies if the address on insert/update matches the address's
-    coordinates.
-    '''
-
-    geocoded = GoogleV3().geocode(address['address'])
-    if not ((abs(geocoded.longitude - address['location']['coordinates'][0])
-            < EPSILON)
-        and (abs(geocoded.latitude - address['location']['coordinates'][1])
-            < EPSILON)
-    ):
-
-        # do not allow totally off addresses to coordinates (within 1.1km)
-        abort(422)
-
-def _coordinatesReadOnly(addressChanges):
-    ''' (dict) -> NoneType
-    Prevents any changes to an address's coordinates.
-    '''
-
-    if 'location' in addressChanges:
         abort(422)

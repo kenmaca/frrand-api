@@ -1,14 +1,12 @@
 from flask import current_app as app
 from flask import abort
 from eve.methods.post import post_internal
-from eve.methods.delete import deleteitem_internal
-from eve.methods.patch import patch_internal
 from datetime import datetime
-from pytz import UTC
-from bson import ObjectId
-from lib.gcm import gcmSend
-from pymongo import DESCENDING
-from routes.requestInvites import _isExpired
+from models.addresses import Address
+from models.locations import location
+from models.users import User
+from models.requests import Request
+from models.requestInvites import Invite
 
 # number of invites to send at a time
 BATCH_SIZE = 100
@@ -136,9 +134,8 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
-    app.on_insert_requests += onInsert
     app.on_inserted_requests += onInserted
-    app.on_pre_GET_requests += forceFetchNewRequests
+    app.on_pre_GET_requests += onPreGet
     app.on_fetched_item_requests += onFetchedItem
     app.on_updated_requests += onUpdated
 
@@ -153,19 +150,16 @@ def onUpdated(updated, original):
     _removeInvites(updated, original)
 
 # on_pre_GET_requests
-def forceFetchNewRequests(request, lookup):
-    ''' (Request, dict) -> NoneType
-    An Eve hook used to force a fresh fetch when requesting a
-    request document.
+def onPreGet(request, lookup):
+    ''' (flask.Request, dict) -> NoneType
+    An Eve hook used to force a fresh fetch.
     '''
 
     if '_id' in lookup:
 
         # update last updated to trigger fresh fetch each time
-        res = app.data.driver.db['requests'].update(
-            {'_id': ObjectId(lookup['_id'])},
-            {'$set': {'_updated': datetime.utcnow()}},
-            upsert=False, multi=False
+        (Request.fromObjectId(app.data.driver.db, lookup['_id'])
+            .set('_updated': datetime.utcnow()).commit()
         )
 
 # on_fetched_item_requests
@@ -174,50 +168,13 @@ def onFetchedItem(request):
     An Eve hook used during fetching a request.
     '''
 
-    _embedRequestDisplay(request)
-
-def _embedRequestDisplay(request):
-    ''' (dict) -> NoneType
-    Embeds requestInvites to its parent request for display.
-    '''
-
-    pendingInvites = []
-    pendingInviteIds = []
-    if 'inviteIds' in request:
-        for inviteId in request['inviteIds']:
-            requestInvite = app.data.driver.db['requestInvites'].find_one({
-                '_id': inviteId
-            })
-
-            if not _isExpired(requestInvite):
-                pendingInvites.append(requestInvite)
-                pendingInviteIds.append(requestInvite['_id'])
-
-        # prune expired invites if the inviteIds list changed
-        if pendingInviteIds != request['inviteIds']:
-            patch_internal('requests',
-                {'inviteIds': pendingInviteIds},
-                _id=request['_id']
-            )
-
-            # update publicRequestInviteId if the request was converted
-            publicInvite = app.data.driver.db['publicRequestInvites'].find_one(
-                {'requestId': request['_id']}
-            )
-
-            if publicInvite:
-                request['publicRequestInviteId'] = publicInvite['_id']
-
-    request['inviteIds'] = pendingInvites
-
-# on_insert_requests
-def onInsert(requests):
-    ''' (list of dict) -> NoneType
-    An Eve hook used prior to insertion.
-    '''
-
-    for request in requests:
-        _addDefaultDestination(request)
+    request.update(
+        Request(
+            app.data.driver.db,
+            Request.collection,
+            **request
+        ).embedView()
+    )
 
 # on_inserted_requests
 def onInserted(requests):
@@ -226,286 +183,146 @@ def onInserted(requests):
     '''
 
     for request in requests:
-        _matchCandidates(request)
+        request = Request(
+            app.data.driver.db,
+            Request.collection,
+            **request
+        )
 
-        # remove this during production
-        _matchAllCandidates(request)
-
-        # currently just send all invites out rather than one by one
-        # for testing
-        _generateRequestInvites(request, BATCH_SIZE)
+        _addDefaultDestination(request)
+        _generateRequestInvites(request.matchAllCandidates(), BATCH_SIZE)
 
 # helpers
 
-def _matchCandidates(request):
-    ''' (dict) -> NoneType
-    Finds suitable candidates to offer requestInvites to based on their
-    travel region and current location.
-    '''
-
-    # first, build the request's routes
-    routes = []
-    destination = app.data.driver.db['addresses'].find_one({
-        '_id': request['destination']
-    })
-
-    for place in request['places']:
-        routes += [{
-            'type': 'LineString',
-            'coordinates': [
-                place['location']['coordinates'],
-                destination['location']['coordinates']
-            ]
-        }]
-
-    # then convert routes to a $geoIntersects with $or query
-    intersects = [
-        {
-            'region': {
-                '$geoIntersects': {
-                    '$geometry': route
-                }
-            }
-        }
-        for route in routes
-    ]
-
-    # and then the full query (sorted by near the first place)
-    # TODO: support multiple places, but this is a limitation of
-    # MongoDB's $or operator
-    query = {
-        '$or': intersects,
-        'location': {
-            '$near': {
-                '$geometry': request['places'][0]['location'],
-
-            # TODO: add maxDistance.. but during development, don't
-            # restrict to allow more candidates
-            }
-        },
-        'current': True,
-
-        # TODO: the cut off between hours will exclude those that haven't
-        # reported this hour yet.. (which depends on the clients reporting
-        # schedule; example: 15 minute reporting cycle will result in up to
-        # first 15 minutes not being considered)
-
-        # will definately cause less available deliveries during the start
-        # of a hour
-
-        # actually: we can just omit the hour, as long as the current
-        # attribute is reliable
-        #'hour': 
-        'dayOfWeek': datetime.utcnow().isoweekday()
-    }
-    locationOfCandidates = app.data.driver.db['locations'].find(query)
-
-    # now, filter out those candidates that aren't active
-    candidates = []
-    for location in locationOfCandidates:
-        candidate = app.data.driver.db['users'].find_one({
-            '_id': location['createdBy']
-        })
-
-        # prevent invites being sent out to the owner
-        if candidate['active'] and candidate['_id'] != request['createdBy']:
-            candidates.append(candidate['_id'])
-
-    # append to the request
-    request['candidates'] += candidates
-    app.data.driver.db['requests'].update(
-        {'_id': request['createdBy']},
-        {'$set': {'candidates': request['candidates'] + candidates}},
-        upsert=False, multi=False
-    )
-
-def _matchAllCandidates(request):
-    ''' (dict) -> NoneType
-    For development use: matches everyone as a candidate.
-    '''
-
-    users = app.data.driver.db['users'].find({})
-    for user in users:
-        if user['active']:
-            request['candidates'].append(user['_id'])
-
-    # now remove duplicates
-    request['candidates'] = list(set(request['candidates']))
-
-    # update Mongo
-    app.data.driver.db['requests'].update(
-        {'_id': request['createdBy']},
-        {'$set': {'candidates': request['candidates']}},
-        upsert=False, multi=False
-    )
-
 def _generateRequestInvites(request, invitesInBatch=1):
-    ''' (dict) -> NoneType
+    ''' (models.requests.Request, int) -> NoneType
     Generates and sends invitesInBatch number of requestInvites via GCM
     from the list of suitable candidates.
-
-    REQ: _matchCandidates was performed in the past.
     '''
 
-    invitesGenerated = []
-    for i in range(min(invitesInBatch, len(request['candidates']))):
-        candidate = app.data.driver.db['users'].find_one({
-            '_id': request['candidates'].pop(0)
-        })
+    for i in range(min(invitesInBatch, len(request.get('candidates')))):
+        candidate = User.fromObjectId(
+            app.data.driver.db,
+            request.pop('candidates')
+        )
 
         # TODO: possible bug, if current batch contains no sendable
         # invites, then request is hanging around without invites
 
         # only send active users invites
-        if candidate['active']:
+        if candidate.isActive():
 
             # adding to list of inviteIds is dependant on
             # on_inserted_requestInvites to get _id
             resp = post_internal('requestInvites', {
-                'requestId': request['_id'],
-                'from': request['createdBy']
+                'requestId': request.getId(),
+                'from': request.get('createdBy')
             })
 
             if resp[3] == 201:
 
                 # set ownership of invite to invitee
-                app.data.driver.db['requestInvites'].update(
-                    {'_id': resp[0]['_id']},
-                    {'$set': {'createdBy': candidate['_id']}},
-                    upsert=False, multi=False
-                )
-
-                # get updated requestInvite
-                requestInvite = app.data.driver.db['requestInvites'].find_one(
-                    {'_id': resp[0]['_id']}
-                )
+                invite = Invite.fromObjectId(
+                    app.data.driver.db,
+                    resp[0]['_id']
+                ).set('createdBy', candidate.getId()).commit()
 
                 # add this invite to the parent request list
-                invitesGenerated.append(requestInvite['_id'])
+                request.addInvite(invite).commit()
 
                 # and finally, send gcm out
-                gcmSend(candidate['deviceId'], {
-                    'type': 'requestInvite',
-                    'requestInvite': requestInvite['_id']
-                })
-
-    # update list of inviteIds and candidates in Mongo
-    app.data.driver.db['requests'].update(
-        {'_id': request['_id']},
-        {'$set': {
-            'inviteIds': request['inviteIds'] + invitesGenerated,
-            'candidates': request['candidates']
-        }},
-        upsert=False, multi=False
-    )
+                candidate.message('requestInvite', invite.getId())
 
 def _addDefaultDestination(request):
-    ''' (dict) -> NoneType
+    ''' (models.requests.Request) -> NoneType
     Adds the closest address known to the requester's current location
     if destination is not specified.
     '''
 
-    if 'destination' not in request:
-        currentLocation = app.data.driver.db['locations'].find_one(
-            {'createdBy': request['createdBy']},
-            sort=[('_id', DESCENDING)]
-        )
+    if not request.exists('destination'):
+        user = User.fromObjectId(app.data.driver.db, request.get('createdBy'))
+        currentLocation = user.getLastLocation()
 
         if currentLocation:
-            closestAddress = app.data.driver.db['addresses'].find_one(
-                {
-                    'createdBy': request['createdBy'],
-                    'location': {
-                        '$near' : {
-                            '$geometry': currentLocation['location']
-                        }
-                    },
+            try:
+                address = Address.findOne(
+                    app.data.driver.db,
+                    {
+                        'createdBy': request.get('createdBy'),
+                        'location': {
+                            '$near' : {
+                                '$geometry': currentLocation.get('location')
+                            }
+                        },
 
-                    # never use temporary addresses (instead, keep creating
-                    # new ones)
-                    'temporary': False
-                }
-            )
-
-            # requester has a known address, so include it
-            if closestAddress:
-                request['destination'] = closestAddress['_id']
+                        # never use temporary addresses (instead, keep creating
+                        # new ones)
+                        'temporary': False
+                    }
+                )
 
             # otherwise, create a temporary address based on the user's
             # current location
-            else:
+            except KeyError:
                 resp = post_internal('addresses', {
-                    'location': currentLocation['location']
+                    'location': currentLocation.get('location')
                 })
 
                 if resp[3] == 201:
 
                     # set ownership of invite to invitee and temporary status
-                    app.data.driver.db['addresses'].update(
-                        {'_id': resp[0]['_id']},
-                        {'$set': {
-                            'createdBy': request['createdBy'],
-                            'temporary': True
-                        }},
-                        upsert=False, multi=False
-                    )
+                    address = (
+                        Address.fromObjectId(
+                            app.data.driver.db,
+                            resp[0]['_id']
+                        ).set('createdBy', user.getId())
+                        .set('temporary', True)
+                    ).commit()
 
                     # alert owner that an address was created for them
-                    user = app.data.driver.db['users'].find_one(
-                        {'_id': request['createdBy']}
-                    )
+                    user.message('addressCreated', address.getId())
 
-                    gcmSend(user['deviceId'], {
-                        'type': 'addressCreated',
-                        'addressCreated': resp[0]['_id']
-                    })
+            # finally, set destination to either closest or temp address
+            request.set('destination', address.getId())
 
-                    # finally, set destination to temporary address
-                    request['destination'] = resp[0]['_id']
+        # do not allow creation of Request if no location data at all
+        request.remove()
+        abort(422)
 
 def _refreshInvites(request):
-    ''' (dict) -> NoneType
+    ''' (models.requests.Request) -> NoneType
     Generates new requestInvites if the list is empty and there are
     still candidates. Generates a publicRequestInvite if there are
     no requestInvites and no more candidates.
     '''
 
-    # TODO: clean up this hack
-    # supplement createdBy in request if its not present, due to Eve
-    # not providing auth_fields in PATCH's
-    if 'createdBy' not in request:
-        request['createdBy'] = app.data.driver.db['requests'].find_one({
-            '_id': request['_id']
-        })['createdBy']
-
-    if not request['inviteIds']:
-        if request['candidates']:
-            _generateRequestInvites(request)
+    if not request.get('inviteIds'):
+        if request.get('candidates'):
+            _generateRequestInvites(request, BATCH_SIZE)
 
         # unclaimed, so create a publicRequestInvite if one doesn't
         # already exist
-        elif not request['publicRequestInviteId']:
+        elif not request.get('publicRequestInviteId'):
             resp = post_internal(
                 'publicRequestInvites', {
-                    'requestId': request['_id'],
-                    'from': request['createdBy']
+                    'requestId': request.getId(),
+                    'from': request.get('createdBy')
                 }
             )
 
             if resp[3] == 201:
-                app.data.driver.db['requests'].update(
-                    {'_id': request['_id']},
-                    {'$set': {
-                        'publicRequestInviteId': resp[0]['_id']
-                    }},
-                    upsert=False, multi=False
-                )
+                request.set('publicRequestInviteId', resp[0]['_id']).commit()
 
 def _removeInvites(updated, original):
     ''' (dict, dict) -> NoneType
     Removes any invites from Mongo that don't appear in the
     updated copy but do in the original.
     '''
+
+    request = Request.fromObjectId(
+        app.data.driver.db,
+        original['_id']
+    ).update(updated)
 
     if 'inviteIds' in updated:
         for invite in original['inviteIds']:
@@ -519,16 +336,9 @@ def _removeInvites(updated, original):
                 # the requestInvite itself.
                 # deleteitem_internal appears to not work when
                 # called within another internal call?
-                app.data.driver.db['requestInvites'].remove({
-                    '_id': invite
-                })
-
-        # updating inviteIds list for _refreshInvites
-        original['inviteIds'] = updated['inviteIds']
-    
+                request.removeInvite(
+                    Invite.fromObjectId(app.data.driver.db, invite)
+                )
 
     # pump out more invites if the inviteIds list is empty    
-    _refreshInvites((lambda a, b: a.update(b) or a)(
-        original,
-        updated
-    ))
+    _refreshInvites(request.commit())
