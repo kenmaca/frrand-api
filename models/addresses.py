@@ -1,4 +1,4 @@
-from models.orm import MongoORM
+from models import orm
 from geopy.geocoders import GoogleV3
 
 class Address(MongoORM):
@@ -13,7 +13,7 @@ class Address(MongoORM):
         Creates an Address directly from db with an ObjectId of objectId.
         '''
 
-        return MongoORM.fromObjectId(db, objectId, Address)
+        return orm.MongoORM.fromObjectId(db, objectId, Address)
 
     @staticmethod
     def findOne(db, **query):
@@ -21,7 +21,7 @@ class Address(MongoORM):
         Finds a single Address given query.
         '''
 
-        return MongoORM.findOne(db, Address, **query)
+        return orm.MongoORM.findOne(db, Address, **query)
 
     def geocodeAddress(self):
         ''' (Address) -> Address

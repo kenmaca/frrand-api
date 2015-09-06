@@ -1,8 +1,5 @@
+from models import orm, requestInvites, users, addresses
 from datetime import datetime
-from models.orm import MongoORM
-from models.requestInvites import Invite
-from models.users import User
-from models.addresses import Address
 
 class Request(MongoORM):
     ''' A representation of a Request in Frrand.
@@ -16,7 +13,7 @@ class Request(MongoORM):
         Creates a Request directly from database with an ObjectId of objectId.
         '''
 
-        return MongoORM.fromObjectId(db, objectId, Request)
+        return orm.MongoORM.fromObjectId(db, objectId, Request)
 
     @staticmethod
     def findOne(db, **query):
@@ -24,7 +21,7 @@ class Request(MongoORM):
         Finds a single Request given query.
         '''
 
-        return MongoORM.findOne(db, Request, **query)
+        return orm.MongoORM.findOne(db, Request, **query)
 
     def matchCandidates(self):
         ''' (Request) -> Request
@@ -34,7 +31,7 @@ class Request(MongoORM):
 
         # first, build the request's routes
         routes = []
-        destination = Address.fromObjectId(
+        destination = addresses.Address.fromObjectId(
             self.db,
             self.get('destination')
         )
@@ -93,7 +90,7 @@ class Request(MongoORM):
 
         # now, filter out those candidates that aren't active
         for location in locationOfCandidates:
-            candidate = User.fromObjectId(
+            candidate = users.User.fromObjectId(
                 self.db,
                 location['createdBy']
             )
@@ -108,13 +105,12 @@ class Request(MongoORM):
         return self
 
     def matchAllCandidates(self):
-    ''' (Request) -> Request
-    For development use: matches everyone as a candidate.
-    '''
+        ''' (Request) -> Request
+        For development use: matches everyone as a candidate.
+        '''
 
-        users = self.db['users'].find({})
-        for user in users:
-            user = User(self.db, User.collection, **user)
+        for user in self.db['users'].find({}):
+            user = users.User(self.db, users.User.collection, **user)
             if user.isActive():
                 self.push('candidates', user.getId())
 
@@ -133,7 +129,7 @@ class Request(MongoORM):
 
         # embed inviteIds
         embed['inviteIds'] = [
-            Invite(self.db, inviteId).view()
+            requestInvites.Invite(self.db, inviteId).view()
             for inviteId in self.get('inviteIds')
         ]
 

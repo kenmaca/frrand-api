@@ -1,5 +1,5 @@
-from models.orm import MongoORM
-from models.users import User
+import models
+from models import orm, users
 from datetime import datetime
 from pymongo import DESCENDING
 from shapely.geometry import mapping, shape
@@ -16,7 +16,7 @@ class Location(MongoORM):
         Creates a Location directly from database with an ObjectId of objectId.
         '''
 
-        return MongoORM.findOne(db, Location, **query)
+        return orm.MongoORM.findOne(db, Location, **query)
 
     def setCurrent(self):
         ''' (Location) -> Location
@@ -137,7 +137,7 @@ class Location(MongoORM):
         REQ: mergePrevious was run previously
         '''
 
-        owner = User.fromObjectId(self.db, self.get('createdBy'))
+        owner = users.User.fromObjectId(self.db, self.get('createdBy'))
 
         # start with current location
         points = [self.get('location')['coordinates']]

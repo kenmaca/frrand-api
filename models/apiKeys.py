@@ -1,4 +1,4 @@
-from models.orm import MongoORM
+from models import orm
 
 class APIKey(MongoORM):
     ''' A representation of an APIKey in Frrand.
@@ -12,7 +12,7 @@ class APIKey(MongoORM):
         Creates a APIKey directly from database with an ObjectId of objectId.
         '''
 
-        return MongoORM.fromObjectId(db, objectId, APIKey)
+        return orm.MongoORM.fromObjectId(db, objectId, APIKey)
 
     def prune(self):
         ''' (APIKey) -> APIKey

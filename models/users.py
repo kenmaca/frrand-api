@@ -1,8 +1,6 @@
-from models.orm import MongoORM
-from models.addresses import Address
-from models.locations import Location
+from models import orm, addresses, locations
+from lib import gcm
 from pymongo import DESCENDING
-from lib.gcm import gcmSend
 
 class User(MongoORM):
     ''' A representation of an User in Frrand.
@@ -16,7 +14,7 @@ class User(MongoORM):
         Creates a User directly from database with an ObjectId of objectId.
         '''
 
-        return MongoORM.fromObjectId(db, objectId, User)
+        return orm.MongoORM.fromObjectId(db, objectId, User)
 
     def selfOwn(self):
         ''' (User) -> User
@@ -28,12 +26,16 @@ class User(MongoORM):
         return self
 
     def getAddresses(self, temporary=False):
-        ''' (User, bool) -> list of models.addresses.addresses
+        ''' (User, bool) -> list of models.addresses.Address
         Obtains a listing of Addresses owned by this User.
         '''
 
-        return [Address(self.db, Address.collection, **address) for address in 
-            self.db[Address.collection].find(
+        return [addresses.Address(
+                self.db,
+                addresses.Address.collection,
+                **address
+            ) for address in 
+            self.db[addresses.Address.collection].find(
                 {
                     'createdBy': self.getId(),
                     'temporary': temporary
@@ -47,7 +49,7 @@ class User(MongoORM):
         deviceId if provided.
         '''
 
-        return gcmSend(
+        return gcm.gcmSend(
             deviceId if deviceId else self.get('deviceId'),
             {
                 'type': messageType,
@@ -76,6 +78,9 @@ class User(MongoORM):
         '''
 
         try:
-            return Location.findOne(self.db, createdBy=self.getId())
+            return locations.Location.findOne(
+                self.db,
+                createdBy=self.getId()
+            )
         except ValueError:
             return

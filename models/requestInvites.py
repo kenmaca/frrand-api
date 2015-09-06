@@ -1,9 +1,6 @@
-from models.orm import MongoORM
+from models import orm, requests, addresses, users
 from datetime import datetime, timedelta
 from pytz import UTC
-from models.requests import Request
-from models.addresses import Address
-from models.users import User
 
 class Invite(MongoORM):
     ''' A representation of an Invite for a Request in Frrand.
@@ -17,7 +14,7 @@ class Invite(MongoORM):
         Creates an Invite directly from db with an ObjectId of objectId.
         '''
 
-        return MongoORM.fromObjectId(db, objectId, Invite)
+        return orm.MongoORM.fromObjectId(db, objectId, Invite)
 
     @staticmethod
     def findOne(db, **query):
@@ -25,7 +22,7 @@ class Invite(MongoORM):
         Finds a single Invite given query.
         '''
 
-        return MongoORM.findOne(db, Invite, **query)
+        return orm.MongoORM.findOne(db, Invite, **query)
 
     def embedView(self):
         ''' (Invite) -> dict
@@ -33,15 +30,15 @@ class Invite(MongoORM):
         '''
 
         embed = self.view()
-        embed['requestId'] = Request.fromObjectId(
+        embed['requestId'] = requests.Request.fromObjectId(
             self.db,
             self.get('requestId')
         ).view()
-        embed['requestId']['destination'] = Address.fromObjectId(
+        embed['requestId']['destination'] = addresses.Address.fromObjectId(
             self.db,
             embed['requestId']['destination']
         ).view()
-        embed['from'] = User.fromObjectId(
+        embed['from'] = users.User.fromObjectId(
             self.db,
             self.get('from')
         ).get('username')
@@ -80,6 +77,6 @@ class Invite(MongoORM):
         self.set('accepted', True)
 
         # alert owner
-        (User.fromObjectId(self.db, self.get('from'))
+        (users.User.fromObjectId(self.db, self.get('from'))
             .message('requestInviteAccepted', self.getId())
         )
