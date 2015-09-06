@@ -1,10 +1,9 @@
-import models
-from models import orm, users
+import models.orm as orm
 from datetime import datetime
 from pymongo import DESCENDING
 from shapely.geometry import mapping, shape
 
-class Location(MongoORM):
+class Location(orm.MongoORM):
     ''' A representation of a Location in Frrand.
     '''
 
@@ -137,6 +136,7 @@ class Location(MongoORM):
         REQ: mergePrevious was run previously
         '''
 
+        import models.users as users
         owner = users.User.fromObjectId(self.db, self.get('createdBy'))
 
         # start with current location

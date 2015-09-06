@@ -1,10 +1,6 @@
 from flask import current_app as app
 from flask import abort
 from datetime import datetime
-from models.requestInvites import Invite
-from models.requests import Request
-from models.users import User
-from routes.requests import _refreshInvites
 
 # default expiry time of each requestInvite until deletion in minutes
 DEFAULT_EXPIRY = 15
@@ -94,8 +90,11 @@ def onPreGet(request, lookup):
     if '_id' in lookup:
 
         # update last updated to trigger fresh fetch each time
-        (Invite.fromObjectId(app.data.driver.db, lookup['_id'])
-            .set('_updated': datetime.utcnow()).commit()
+        import models.requestInvites as requestInvites
+        (requestInvites.Invite.fromObjectId(
+                app.data.driver.db,
+                lookup['_id']
+            ).set('_updated', datetime.utcnow()).commit()
         )
 
 # on_fetched_item_requestInvites
@@ -106,9 +105,10 @@ def onFetchedItem(invite):
     request is mutated with new values.
     '''
 
-    requestInvite = Invite(
+    import models.requestInvites as requestInvites
+    requestInvite = requestInvites.Invite(
         app.data.driver.db,
-        Invite.collection,
+        requestInvites.Invite.collection,
         **invite
     )
 
@@ -128,10 +128,11 @@ def onInserted(invites):
     An Eve hook used after insertion.
     '''
 
+    import models.requestInvites as requestInvites
     for invite in invites:
-        Invite(
+        requestInvites.Invite(
             app.data.driver.db,
-            Invite.collection,
+            requestInvites.Invite.collection,
             **invite
         ).addExpiry(DEFAULT_EXPIRY).commit()
 
@@ -141,7 +142,11 @@ def onUpdate(changes, invite):
     An Eve hook used prior to update.
     '''
 
-    requestInvite = Invite.fromObjectId(app.data.driver.db, invite['_id'])
+    import models.requestInvites as requestInvites
+    requestInvite = requestInvites.Invite.fromObjectId(
+        app.data.driver.db,
+        invite['_id']
+    )
 
     # disallow expired invites
     if requestInvite.isExpired():
@@ -160,7 +165,8 @@ def onUpdated(changes, invite):
     '''
 
     if 'accepted' in changes:
-        Invite.fromObjectId(
+        import models.requestInvites as requestInvites
+        requestInvites.Invite.fromObjectId(
             app.data.driver.db,
             invite['_id']
         ).accept().commit()
@@ -171,11 +177,15 @@ def onDeletedItem(invite):
     An Eve hook used after an item is deleted.
     '''
 
-    (Request.fromObjectId(app.data.driver.db, invite['requestId'])
-        .removeInvite(
-            Invite(
+    import models.requests as requests
+    import models.requestInvites as requestInvites
+    (requests.Request.fromObjectId(
+            app.data.driver.db,
+            invite['requestId']
+        ).removeInvite(
+            requestInvites.Invite(
                 app.data.driver.db,
-                Invite.collection,
+                requestInvites.Invite.collection,
                 **invite
             )
         )
@@ -188,10 +198,12 @@ def _removeInvite(invite):
     Removes the Invite from its Request.
     '''
 
-    request = Request.fromObjectId(
+    import models.requests as requests
+    request = requests.Request.fromObjectId(
         app.data.driver.db,
         invite.get('requestId')
     ).removeInvite(invite).commit()
 
     # in case invites have all expired
-    _refreshInvites(request)
+    import routes.requests as requestsRoute
+    requestsRoute._refreshInvites(request)

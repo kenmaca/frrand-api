@@ -1,5 +1,4 @@
 from flask import current_app as app
-from models.users import User
 
 schema = {
     'username': {
@@ -75,14 +74,19 @@ def init(app):
 # hooks
 
 # on_inserted_users
-def onInserted(users):
+def onInserted(insertedUsers):
     ''' (list of dict) -> NoneType
     An Eve hook used to set the createdBy field for an newly
     inserted user document to itself (since Eve handles
     auth_field only when inserting via Authenticated routes).
     '''
 
-    for user in users:
+    import models.users as users
+    for user in insertedUsers:
 
         # set newly created user as self-owning
-        User(app.data.driver.db, User.collection, **user).selfOwn().commit()
+        users.User(
+            app.data.driver.db,
+            users.User.collection,
+            **user
+        ).selfOwn().commit()

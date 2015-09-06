@@ -1,6 +1,6 @@
-from models import orm, requestInvites
+import models.orm as orm
 
-class PublicInvite(MongoORM):
+class PublicInvite(orm.MongoORM):
     ''' A representation of an PublicInvite for a Request in Frrand.
     '''
 
@@ -20,4 +20,5 @@ class PublicInvite(MongoORM):
         '''
 
         # use invite's embedView as they share similarities
+        import models.requestInvites as requestInvites
         return requestInvites.Invite.embedView(self)

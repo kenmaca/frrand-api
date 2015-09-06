@@ -1,5 +1,4 @@
 from flask import current_app as app
-from models.addresses import Address
 
 # accuracy to allow range of addresses for given coordinates
 EPSILON = 0.001
@@ -17,6 +16,7 @@ schema = {
             + '\s[a-zA-Z\s]+,'
             + '\s[A-Z]{2}\s[a-zA-Z0-9\s]+,'
             + '\s[a-zA-Z\s]+$'
+        )
     },
     'phone': {
         'type': 'string',
@@ -70,31 +70,38 @@ def onUpdate(updates, originalAddress):
     # prevent address changes outside boundaries
     elif 'address' in updates:
         try:
-            (Address.fromObjectId(app.data.driver.db, originalAddress['_id'])
-                .changeAddress(updates['address'], EPSILON)
+            import models.addresses as addresses
+            (addresses.Address.fromObjectId(
+                    app.data.driver.db,
+                    originalAddress['_id']
+                ).changeAddress(updates['address'], EPSILON)
             )
         except AttributeError:
             abort(422)
 
 # on_insert_addresses
-def onInsert(addresses):
+def onInsert(insertAddresses):
     ''' (list of dict) -> NoneType
     An Eve hook used to prior to insertion.
     '''
 
-    for address in addresses:
+    for address in insertAddresses:
         _approximate(address)
         _uniquePermanent(address)
 
 # on_inserted_addresses
-def onInserted(addresses):
+def onInserted(insertedAddresses):
     ''' (list of dict) -> NoneType
     An Eve hook used after insertion.
     '''
 
-    for address in addresses:
-        (Address(app.data.driver.db, Address.collection, **address)
-            .geocodeAddress()
+    import models.addresses as addresses
+    for address in insertedAddresses:
+        (addresses.Address(
+                app.data.driver.db,
+                addresses.Address.collection,
+                **address
+            ).geocodeAddress()
             .commit()
         )
 

@@ -1,9 +1,5 @@
 from flask import current_app as app
 from eve.methods.post import post_internal
-from lib.gcm import gcmSend
-from models.locations import Location
-from models.users import User
-from models.addresses import Address
 
 # the number of times a location needs to be reported in a row
 # to be considered a stationary location
@@ -70,15 +66,19 @@ def init(app):
 
 # hooks
 
-def onInserted(locations):
+def onInserted(insertedLocations):
     ''' (list of dict) -> NoneType
     An Eve hook used after locations have been inserted.
     '''
 
-    for location in locations:
+    import models.locations as locations
+    for location in insertedLocations:
         _convertToAddress(
-            Location(app.data.driver.db, Location.collection, **location)
-            .setCurrent()
+            locations.Location(
+                app.data.driver.db,
+                locations.Location.collection,
+                **location
+            ).setCurrent()
             .mergePrevious(STATIONARY_THRESHOLD, ACCURACY)
             .buildTravelRegion(LIMIT_REGION)
             .commit()
@@ -100,14 +100,18 @@ def _convertToAddress(location):
         if resp[3] == 201:
 
             # set ownership of newly created Address to self
+            import models.addresses as addresses
             address = (
-                Address.fromObjectId(app.data.driver.db, resp[0]['_id'])
-                .set('createdBy', location.get('createdBy'))
+                addresses.Address.fromObjectId(
+                    app.data.driver.db,
+                    resp[0]['_id']
+                ).set('createdBy', location.get('createdBy'))
                 .commit()
             )
 
             # alert owner that an address was created for them
-            User.fromObjectId(
+            import models.users as users
+            users.User.fromObjectId(
                 app.data.driver.db,
                 location.get('createdBy')
             ).message(

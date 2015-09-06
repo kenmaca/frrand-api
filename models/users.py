@@ -1,8 +1,8 @@
-from models import orm, addresses, locations
-from lib import gcm
+import models.orm as orm
+import lib.gcm as gcm
 from pymongo import DESCENDING
 
-class User(MongoORM):
+class User(orm.MongoORM):
     ''' A representation of an User in Frrand.
     '''
 
@@ -30,6 +30,7 @@ class User(MongoORM):
         Obtains a listing of Addresses owned by this User.
         '''
 
+        import models.addresses as addresses
         return [addresses.Address(
                 self.db,
                 addresses.Address.collection,
@@ -78,6 +79,7 @@ class User(MongoORM):
         '''
 
         try:
+            import models.locations as location
             return locations.Location.findOne(
                 self.db,
                 createdBy=self.getId()

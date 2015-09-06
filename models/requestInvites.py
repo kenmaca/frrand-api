@@ -1,8 +1,8 @@
-from models import orm, requests, addresses, users
+import models.orm as orm
 from datetime import datetime, timedelta
 from pytz import UTC
 
-class Invite(MongoORM):
+class Invite(orm.MongoORM):
     ''' A representation of an Invite for a Request in Frrand.
     '''
 
@@ -28,6 +28,10 @@ class Invite(MongoORM):
         ''' (Invite) -> dict
         Embeds the parent Request as well as any other inaccessable documents.
         '''
+
+        import models.requests as requests
+        import models.addresses as addresses
+        import models.users as users
 
         embed = self.view()
         embed['requestId'] = requests.Request.fromObjectId(
@@ -77,6 +81,7 @@ class Invite(MongoORM):
         self.set('accepted', True)
 
         # alert owner
+        import models.users as users
         (users.User.fromObjectId(self.db, self.get('from'))
             .message('requestInviteAccepted', self.getId())
         )

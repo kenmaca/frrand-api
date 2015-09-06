@@ -1,8 +1,6 @@
 from utils.auth import UserAuth
 from flask import current_app as app
 from flask import abort
-from models.apikeys import APIKey
-from models.users import User
 import random
 import string
 
@@ -42,22 +40,27 @@ def init(app):
 # hooks
 
 # on_insert_apiKeys
-def onInsert(apiKeys):
+def onInsert(insertApiKeys):
     ''' (list of dicts) -> NoneType
     An Eve hook used prior to insertion.
     '''
 
-    for apiKey in apiKeys:
+    for apiKey in insertApiKeys:
         _provision(apiKey)
 
 # on_inserted_apiKeys
-def onInserted(apiKeys):
+def onInserted(insertedApiKeys):
     ''' (list of dicts) -> NoneType
     An Eve hook used after insertion.
     '''
 
-    for apiKey in apiKeys:
-        APIKey(app.data.driver.db, APIKey.collection, **apiKey).prune()
+    import models.apiKeys as apiKeys
+    for apiKey in insertedApiKeys:
+        apiKeys.APIKey(
+            app.data.driver.db,
+            apiKeys.APIKey.collection,
+            **apiKey
+        ).prune()
 
 # helpers
 
@@ -68,7 +71,11 @@ def _provision(apiKey):
 
     token = (''.join(random.choice(string.ascii_uppercase)
         for x in range(32)))
-    user = User.fromObjectId(app.data.driver.db, apiKey['createdBy'])
+    import models.users as users
+    user = users.User.fromObjectId(
+        app.data.driver.db,
+        apiKey['createdBy']
+    )
 
     # only insert into MongoDB if GCM went through
     if user.message(

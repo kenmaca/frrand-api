@@ -1,9 +1,5 @@
 from flask import current_app as app
 from flask import abort
-from models.requests import Request
-from models.requestInvites import Invite
-from models.publicRequestInvites import PublicInvite
-from routes.requests import _generateRequestInvites
 
 schema = {
     'requestId': {
@@ -74,8 +70,11 @@ def onPreGet(request, lookup):
     if '_id' in lookup:
 
         # update last updated to trigger fresh fetch each time
-        (PublicInvite.fromObjectId(app.data.driver.db, lookup['_id'])
-            .set('_updated': datetime.utcnow()).commit()
+        import models.publicRequestInvites as publicRequestInvites
+        (publicRequestInvites.PublicInvite.fromObjectId(
+                app.data.driver.db,
+                lookup['_id']
+            ).set('_updated', datetime.utcnow()).commit()
         )
 
 # on_fetched_item_publicRequestInvites
@@ -85,10 +84,11 @@ def onFetchedItem(publicInvite):
     well as to convert all times to strings in RFC-1123 standard.
     '''
 
+    import models.publicRequestInvites as publicRequestInvites
     publicInvite.update(
-        PublicInvite(
+        publicRequestInvites.PublicInvite(
             app.data.driver.db,
-            PublicInvite.collection,
+            publicRequestInvites.PublicInvite.collection,
             **publicInvite
         ).embedView()
     )
@@ -100,8 +100,11 @@ def onUpdated(changes, publicInvite):
     '''
 
     if 'acceptedBy' in changes:
-        _convertToAcceptedInvite(
-            PublicInvite.fromObjectId(publicInvite['_id'])
+        import models.publicRequestInvites as publicRequestInvites
+        _createAcceptedInvite(
+            publicRequestInvites.PublicInvite.fromObjectId(
+                publicInvite['_id']
+            )
         )
 
 # helpers
@@ -112,7 +115,8 @@ def _createAcceptedInvite(publicInvite):
     '''
 
     try:
-        request = Request.findOne(
+        import models.requests as requests
+        request = requests.Request.findOne(
             app.data.driver.db,
             _id=publicInvite.get('requestId'),
             publicRequestInviteId=publicInvite.getId()
@@ -124,10 +128,11 @@ def _createAcceptedInvite(publicInvite):
             request.push('candidate', publicInvite.get('acceptedBy')).commit()
 
             # generate invites
-            _generateRequestInvites(request)
+            import routes.requests as requestsRoute
+            requestsRoute._generateRequestInvites(request)
     
             # set accepted on the newly generated invite
-            Invite.findOne(
+            requestInvites.Invite.findOne(
                 app.data.driver.db,
                 requestId=request.getId()
             ).accept().commit()

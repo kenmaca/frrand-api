@@ -1,6 +1,6 @@
-from models import orm
+import models.orm as orm
 
-class APIKey(MongoORM):
+class APIKey(orm.MongoORM):
     ''' A representation of an APIKey in Frrand.
     '''
 
@@ -20,7 +20,7 @@ class APIKey(MongoORM):
         pairing of deviceIds to apiKeys.
         '''
 
-        [APIKey(self.db, APIKey.collection, **apiKey).remove(). for apiKey
+        [APIKey(self.db, APIKey.collection, **apiKey).remove() for apiKey
             in self.source.find({
                 'deviceId': self.get('deviceId'),
                 '_id': {

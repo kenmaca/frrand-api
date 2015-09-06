@@ -2,11 +2,6 @@ from flask import current_app as app
 from flask import abort
 from eve.methods.post import post_internal
 from datetime import datetime
-from models.addresses import Address
-from models.locations import location
-from models.users import User
-from models.requests import Request
-from models.requestInvites import Invite
 
 # number of invites to send at a time
 BATCH_SIZE = 100
@@ -158,8 +153,11 @@ def onPreGet(request, lookup):
     if '_id' in lookup:
 
         # update last updated to trigger fresh fetch each time
-        (Request.fromObjectId(app.data.driver.db, lookup['_id'])
-            .set('_updated': datetime.utcnow()).commit()
+        import models.requests as requests
+        (requests.Request.fromObjectId(
+                app.data.driver.db,
+                lookup['_id']
+            ).set('_updated', datetime.utcnow()).commit()
         )
 
 # on_fetched_item_requests
@@ -168,24 +166,26 @@ def onFetchedItem(request):
     An Eve hook used during fetching a request.
     '''
 
+    import models.requests as requests
     request.update(
-        Request(
+        requests.Request(
             app.data.driver.db,
-            Request.collection,
+            requests.Request.collection,
             **request
         ).embedView()
     )
 
 # on_inserted_requests
-def onInserted(requests):
+def onInserted(insertedRequests):
     ''' (list of dict) -> NoneType
     An Eve hook used after insertion.
     '''
 
-    for request in requests:
-        request = Request(
+    import models.requests as requests
+    for request in insertedRequests:
+        request = requests.Request(
             app.data.driver.db,
-            Request.collection,
+            requests.Request.collection,
             **request
         )
 
@@ -200,8 +200,10 @@ def _generateRequestInvites(request, invitesInBatch=1):
     from the list of suitable candidates.
     '''
 
+    import models.users as users
+    import models.requestInvites as requestInvites
     for i in range(min(invitesInBatch, len(request.get('candidates')))):
-        candidate = User.fromObjectId(
+        candidate = users.User.fromObjectId(
             app.data.driver.db,
             request.pop('candidates')
         )
@@ -222,7 +224,7 @@ def _generateRequestInvites(request, invitesInBatch=1):
             if resp[3] == 201:
 
                 # set ownership of invite to invitee
-                invite = Invite.fromObjectId(
+                invite = requestInvites.Invite.fromObjectId(
                     app.data.driver.db,
                     resp[0]['_id']
                 ).set('createdBy', candidate.getId()).commit()
@@ -240,12 +242,18 @@ def _addDefaultDestination(request):
     '''
 
     if not request.exists('destination'):
-        user = User.fromObjectId(app.data.driver.db, request.get('createdBy'))
+        import models.users as users
+        import models.addresses as addresses
+
+        user = users.User.fromObjectId(
+            app.data.driver.db,
+            request.get('createdBy')
+        )
         currentLocation = user.getLastLocation()
 
         if currentLocation:
             try:
-                address = Address.findOne(
+                address = addresses.Address.findOne(
                     app.data.driver.db,
                     {
                         'createdBy': request.get('createdBy'),
@@ -272,7 +280,7 @@ def _addDefaultDestination(request):
 
                     # set ownership of invite to invitee and temporary status
                     address = (
-                        Address.fromObjectId(
+                        addresses.Address.fromObjectId(
                             app.data.driver.db,
                             resp[0]['_id']
                         ).set('createdBy', user.getId())
@@ -319,7 +327,10 @@ def _removeInvites(updated, original):
     updated copy but do in the original.
     '''
 
-    request = Request.fromObjectId(
+    import models.requests as requests
+    import models.requestInvites as requestInvites
+
+    request = requests.Request.fromObjectId(
         app.data.driver.db,
         original['_id']
     ).update(updated)
@@ -337,7 +348,10 @@ def _removeInvites(updated, original):
                 # deleteitem_internal appears to not work when
                 # called within another internal call?
                 request.removeInvite(
-                    Invite.fromObjectId(app.data.driver.db, invite)
+                    requestInvites.Invite.fromObjectId(
+                        app.data.driver.db,
+                        invite
+                    )
                 )
 
     # pump out more invites if the inviteIds list is empty    

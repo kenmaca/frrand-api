@@ -1,7 +1,7 @@
-from models import orm, requestInvites, users, addresses
+import models.orm as orm
 from datetime import datetime
 
-class Request(MongoORM):
+class Request(orm.MongoORM):
     ''' A representation of a Request in Frrand.
     '''
 
@@ -31,6 +31,7 @@ class Request(MongoORM):
 
         # first, build the request's routes
         routes = []
+        import models.addresses as addresses
         destination = addresses.Address.fromObjectId(
             self.db,
             self.get('destination')
@@ -89,6 +90,7 @@ class Request(MongoORM):
         locationOfCandidates = self.db['locations'].find(query)
 
         # now, filter out those candidates that aren't active
+        import models.users as users
         for location in locationOfCandidates:
             candidate = users.User.fromObjectId(
                 self.db,
@@ -109,6 +111,7 @@ class Request(MongoORM):
         For development use: matches everyone as a candidate.
         '''
 
+        import models.users as users
         for user in self.db['users'].find({}):
             user = users.User(self.db, users.User.collection, **user)
             if user.isActive():
@@ -128,6 +131,7 @@ class Request(MongoORM):
         embed = self.view()
 
         # embed inviteIds
+        import models.requestInvites as requestInvites
         embed['inviteIds'] = [
             requestInvites.Invite(self.db, inviteId).view()
             for inviteId in self.get('inviteIds')

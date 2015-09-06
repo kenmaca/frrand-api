@@ -1,7 +1,7 @@
-from models import orm
+import models.orm as orm
 from geopy.geocoders import GoogleV3
 
-class Address(MongoORM):
+class Address(orm.MongoORM):
     ''' A representation of an Address in Frrand.
     '''
 
