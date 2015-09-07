@@ -131,13 +131,33 @@ class Request(orm.MongoORM):
         embed = self.view()
 
         # embed inviteIds
+        embed['inviteIds'] = [invite.view() for invite in self.getInvites()]
+        
+        return embed
+
+    def getInvites(self):
+        ''' (Request) -> list of models.requestInvites.Invite
+        Gets a list of all the invites that belong to this Request.
+        '''
         import models.requestInvites as requestInvites
-        embed['inviteIds'] = [
-            requestInvites.Invite.fromObjectId(self.db, inviteId).view()
-            for inviteId in self.get('inviteIds')
+        return [
+            requestInvites.Invite.fromObjectId(
+                self.db,
+                inviteId
+            ) for inviteId in self.get('inviteIds')
         ]
 
-        return embed
+    def pruneExpiredInvites(self):
+        ''' (Request) -> Request
+        Removes all expired invites.
+        '''
+
+        [
+            self.removeInvite(invite)
+            for invite in self.getInvites()
+            if invite.isExpired()
+        ]
+        return self
 
     def addInvite(self, invite):
         ''' (Request, models.requestInvites.Invite) -> Request

@@ -145,19 +145,20 @@ def onUpdated(updated, original):
     _removeInvites(updated, original)
 
 # on_fetched_item_requests
-def onFetchedItem(request):
+def onFetchedItem(fetchedRequest):
     ''' (dict) -> NoneType
     An Eve hook used during fetching a request.
     '''
 
     import models.requests as requests
-    request.update(
-        requests.Request(
-            app.data.driver.db,
-            requests.Request.collection,
-            **request
-        ).embedView()
-    )
+    request = requests.Request(
+        app.data.driver.db,
+        requests.Request.collection,
+        **request
+
+    # prune expired before presenting and refresh
+    _refreshInvites(request.pruneExpiredInvites())
+    fetchedRequest.update(request.commit().embedView())
 
 def onFetched(fetchedRequests):
     ''' (dict) -> NoneType
