@@ -85,7 +85,7 @@ class MongoORM:
         Updates this MongoORM's document in its linked collection.
         '''
 
-        if (self._original != self._current):
+        if self.diff():
             self.source.update(
                 {
                     '_id': self.getId()
@@ -193,7 +193,10 @@ class MongoORM:
         Returns a dictionary of this MongoORM.
         '''
 
-        return dict(self._original).update(self._current)
+        ormView = dict(self._original)
+        ormView.update(self._current)
+
+        return ormView
 
     def update(self, patch):
         ''' (MongoORM, dict) -> MongoORM

@@ -72,8 +72,8 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
-    app.on_pre_GET_requestInvites += onPreGet
     app.on_fetched_item_requestInvites += onFetchedItem
+    app.on_fetched_resource_requestInvites += onFetched
     app.on_inserted_requestInvites += onInserted
     app.on_update_requestInvites += onUpdate
     app.on_updated_requestInvites += onUpdated
@@ -81,24 +81,8 @@ def init(app):
 
 # hooks
 
-# on_pre_GET_requestInvites
-def onPreGet(request, lookup):
-    ''' (Request, dict) -> NoneType
-    An Eve hook used to force a fresh fetch.
-    '''
-
-    if '_id' in lookup:
-
-        # update last updated to trigger fresh fetch each time
-        import models.requestInvites as requestInvites
-        (requestInvites.Invite.fromObjectId(
-                app.data.driver.db,
-                lookup['_id']
-            ).set('_updated', datetime.utcnow()).commit()
-        )
-
 # on_fetched_item_requestInvites
-def onFetchedItem(invite):
+def onFetchedItem(invite, preventDisplay=True):
     ''' (dict) -> NoneType
     An Eve hook used to embed requests to its child requestInvites as
     well as to convert all times to strings in RFC-1123 standard.
@@ -120,7 +104,18 @@ def onFetchedItem(invite):
         _removeInvite(requestInvite)
 
         # prevent display
-        abort(404)
+        del invite
+        if preventDisplay: abort(404)
+
+# on_fetched_resource_requestInvites
+def onFetched(invites):
+    ''' (dict) -> NoneType
+    An Eve hook used when fetching a list of requestInvites.
+    '''
+
+    if '_items' in invites:
+        for invite in invites['_items']:
+            onFetchedItem(invite, False)            
 
 # on_inserted_requestInvites
 def onInserted(invites):

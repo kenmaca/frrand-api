@@ -79,7 +79,7 @@ class User(orm.MongoORM):
         '''
 
         try:
-            import models.locations as location
+            import models.locations as locations
             return locations.Location.findOne(
                 self.db,
                 createdBy=self.getId()

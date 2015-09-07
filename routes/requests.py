@@ -130,8 +130,8 @@ def init(app):
     '''
 
     app.on_inserted_requests += onInserted
-    app.on_pre_GET_requests += onPreGet
     app.on_fetched_item_requests += onFetchedItem
+    app.on_fetched_resource_requests += onFetched
     app.on_updated_requests += onUpdated
 
 # hooks
@@ -143,22 +143,6 @@ def onUpdated(updated, original):
     '''
 
     _removeInvites(updated, original)
-
-# on_pre_GET_requests
-def onPreGet(request, lookup):
-    ''' (flask.Request, dict) -> NoneType
-    An Eve hook used to force a fresh fetch.
-    '''
-
-    if '_id' in lookup:
-
-        # update last updated to trigger fresh fetch each time
-        import models.requests as requests
-        (requests.Request.fromObjectId(
-                app.data.driver.db,
-                lookup['_id']
-            ).set('_updated', datetime.utcnow()).commit()
-        )
 
 # on_fetched_item_requests
 def onFetchedItem(request):
@@ -174,6 +158,16 @@ def onFetchedItem(request):
             **request
         ).embedView()
     )
+
+def onFetched(fetchedRequests):
+    ''' (dict) -> NoneType
+    An Eve hook used during fetching a list of requests.
+    '''
+
+    # embed each request
+    if '_items' in fetchedRequests:
+        for request in fetchedRequests['_items']:
+            onFetchedItem(request)
 
 # on_inserted_requests
 def onInserted(insertedRequests):
@@ -255,7 +249,7 @@ def _addDefaultDestination(request):
             try:
                 address = addresses.Address.findOne(
                     app.data.driver.db,
-                    {
+                    **{
                         'createdBy': request.get('createdBy'),
                         'location': {
                             '$near' : {
@@ -294,8 +288,9 @@ def _addDefaultDestination(request):
             request.set('destination', address.getId())
 
         # do not allow creation of Request if no location data at all
-        request.remove()
-        abort(422)
+        else:
+            request.remove()
+            abort(422, 'No location history exists')
 
 def _refreshInvites(request):
     ''' (models.requests.Request) -> NoneType

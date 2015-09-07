@@ -133,7 +133,7 @@ class Request(orm.MongoORM):
         # embed inviteIds
         import models.requestInvites as requestInvites
         embed['inviteIds'] = [
-            requestInvites.Invite(self.db, inviteId).view()
+            requestInvites.Invite.fromObjectId(self.db, inviteId).view()
             for inviteId in self.get('inviteIds')
         ]
 
