@@ -122,6 +122,21 @@ class Request(orm.MongoORM):
 
         return self
 
+    def matchOwnerAsCandidate(self):
+        ''' (Request) -> Request
+        For development use: matches only the owner as a candidate.
+        '''
+
+        import models.users as users
+        user = users.User.fromObjectId(self.db, self.get('createdBy'))
+        if user.isActive():
+            self.push('candidates', user.getId())
+
+        # now remove duplicates
+        self.set('candidates', list(set(self.get('candidates'))))
+
+        return self
+
     def embedView(self):
         ''' (Request) -> dict
         Embeds requestInvites to its parent request for display.

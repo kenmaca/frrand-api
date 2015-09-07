@@ -50,15 +50,46 @@ class User(orm.MongoORM):
         deviceId if provided.
         '''
 
-        return gcm.gcmSend(
-            deviceId if deviceId else self.get('deviceId'),
-            {
-                'type': messageType,
-                messageType: message
-            }
-        )
+        if deviceId:
+            return gcm.gcmSend(
+                deviceId if deviceId else self.get('deviceId'),
+                {
+                    'type': messageType,
+                    messageType: message
+                }
+            )
 
-    def useAPIKey(self, apiKey):
+        # sends to all known devices for dev use
+        else:
+            return [
+                gcm.gcmSend(
+                    apiKey.get('deviceId'),
+                    {
+                        'type': messageType,
+                        messageType: message
+                    }
+                ) for apiKey in self.getApiKeys()
+            ]
+
+    def getApiKeys(self):
+        ''' (User) -> list of models.apiKeys.APIKey
+        Gets all APIKeys owned by this User.
+        '''
+
+        keys = []
+        import models.apiKeys as apiKeys
+        for apiKey in self.source.find({'createdBy': self.getId()}):
+            keys.append(
+                apiKeys.APIKey(
+                    self.db,
+                    apiKeys.APIKey.collection,
+                    **apiKey
+                )
+            )
+
+        return keys
+
+    def useApiKey(self, apiKey):
         ''' (User, models.apikeys.APIKey) -> User
         Updates the last known deviceId for this User.
         '''

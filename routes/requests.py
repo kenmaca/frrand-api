@@ -211,7 +211,7 @@ def onInserted(insertedRequests):
         )
 
         _addDefaultDestination(request)
-        _generateRequestInvites(request.matchAllCandidates(), BATCH_SIZE)
+        _generateRequestInvites(request.matchOwnerAsCandidate(), BATCH_SIZE)
 
 # helpers
 
