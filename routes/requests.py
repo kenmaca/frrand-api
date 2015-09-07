@@ -172,7 +172,7 @@ def onFetchedItem(fetchedRequest):
     request = requests.Request(
         app.data.driver.db,
         requests.Request.collection,
-        **request
+        **fetchedRequest
 
     # prune expired before presenting and refresh
     _refreshInvites(request.pruneExpiredInvites())
