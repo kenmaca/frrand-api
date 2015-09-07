@@ -142,7 +142,25 @@ def onUpdated(updated, original):
     An Eve hook used after an updated request.
     '''
 
-    _removeInvites(updated, original)
+    import models.requests as requests
+    request = requests.Request.fromObjectId(
+        app.data.driver.db,
+        original['_id']
+    ).update(updated)
+
+    # inviteIds have changed
+    if 'inviteIds' in updated:
+        _removeInvites(request)
+
+    # owner has attached an invite
+    if 'attachedInviteId' in updated:
+        import models.requestInvites as requestInvites
+        request.attachInvite(
+            requestInvites.Invite.fromObjectId(
+                app.data.driver.db,
+                updated['attachedInviteId']
+            )
+        )
 
 # on_fetched_item_requests
 def onFetchedItem(fetchedRequest):
@@ -317,38 +335,21 @@ def _refreshInvites(request):
             if resp[3] == 201:
                 request.set('publicRequestInviteId', resp[0]['_id']).commit()
 
-def _removeInvites(updated, original):
-    ''' (dict, dict) -> NoneType
+def _removeInvites(request):
+    ''' (models.requests.Request) -> NoneType
     Removes any invites from Mongo that don't appear in the
     updated copy but do in the original.
     '''
 
-    import models.requests as requests
     import models.requestInvites as requestInvites
-
-    request = requests.Request.fromObjectId(
-        app.data.driver.db,
-        original['_id']
-    ).update(updated)
-
-    if 'inviteIds' in updated:
-        for invite in original['inviteIds']:
-            if invite not in updated['inviteIds']:
-
-                # TODO: fix hacky direct deletion. should be using
-                # eve.methods.delete.deleteitem_internal instead
-                # to trigger any hooks, but should be safe here
-                # since no hooks need to be called after removing
-                # both from the parent request inviteIds list and
-                # the requestInvite itself.
-                # deleteitem_internal appears to not work when
-                # called within another internal call?
-                request.removeInvite(
-                    requestInvites.Invite.fromObjectId(
-                        app.data.driver.db,
-                        invite
-                    )
+    for invite in request.getOriginal('inviteIds'):
+        if invite not in request.get('inviteIds'):
+            request.removeInvite(
+                requestInvites.Invite.fromObjectId(
+                    app.data.driver.db,
+                    invite
                 )
+            )
 
     # pump out more invites if the inviteIds list is empty    
     _refreshInvites(request.commit())

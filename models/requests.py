@@ -175,8 +175,47 @@ class Request(orm.MongoORM):
         inviteIds = self.get('inviteIds')
         try:
             inviteIds.remove(invite.getId())
+            self.set('inviteIds', inviteIds)
             invite.remove()
         except ValueError:
             pass
+
+        return self
+
+    def attachInvite(self, invite):
+        ''' (Request, models.requestInvites.Invite) -> Request
+        Attaches the selected invite to this Request.
+        '''
+
+        # make sure that the invite is associated with this Request
+        if (
+            invite.getId() in self.get('inviteIds')
+            and invite.get('requestId') == self.getId()
+        ):
+
+            # attach
+            self.set('attachedInviteId', invite.getId())
+            invite.attach()
+
+            # remove all other invites and candidates
+            self.set('candidates', [])
+            [
+                self.removeInvite(otherInvite)
+                for otherInvite in self.get('inviteIds')
+                if otherInvite != invite.getId()
+            ]
+
+            # remove PublicInvite if it exists
+            if self.get('publicRequestInviteId'):
+                import models.publicRequestInvites as publicInvites
+                publicInvites.PublicInvite.fromObjectId(
+                    self.db,
+                    self.get('publicRequestInviteId')
+                ).remove()
+
+                self.set('publicRequestInviteId', None)
+
+        else:
+            raise ValueError('Invite is not associated with this Request')
 
         return self
