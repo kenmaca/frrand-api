@@ -150,17 +150,23 @@ def onUpdated(updated, original):
 
     # inviteIds have changed
     if 'inviteIds' in updated:
-        _removeInvites(request)
+        if not request.getOriginal('attachedInviteId'):
+            _removeInvites(request)
+        else:
+            abort(422, 'Cannot change Invites once attached')
 
     # owner has attached an invite
     if 'attachedInviteId' in updated:
-        import models.requestInvites as requestInvites
-        request.attachInvite(
-            requestInvites.Invite.fromObjectId(
-                app.data.driver.db,
-                updated['attachedInviteId']
+        if not request.getOriginal('attachedInviteId'):
+            import models.requestInvites as requestInvites
+            request.attachInvite(
+                requestInvites.Invite.fromObjectId(
+                    app.data.driver.db,
+                    updated['attachedInviteId']
+                )
             )
-        )
+        else:
+            abort(422, 'Already attached')
 
 # on_fetched_item_requests
 def onFetchedItem(fetchedRequest):
@@ -169,13 +175,15 @@ def onFetchedItem(fetchedRequest):
     '''
 
     import models.requests as requests
-    request = requests.Request(
+    request = requests.Request.fromObjectId(
         app.data.driver.db,
-        requests.Request.collection,
-        **fetchedRequest
+        fetchedRequest['_id']
+    )
 
     # prune expired before presenting and refresh
-    _refreshInvites(request.pruneExpiredInvites())
+    if not request.get('attachedInviteId'):
+        _refreshInvites(request.pruneExpiredInvites())
+        
     fetchedRequest.update(request.commit().embedView())
 
 def onFetched(fetchedRequests):
@@ -318,22 +326,24 @@ def _refreshInvites(request):
     no requestInvites and no more candidates.
     '''
 
-    if not request.get('inviteIds'):
-        if request.get('candidates'):
-            _generateRequestInvites(request, BATCH_SIZE)
+    # prevent generating anymore invites once attached
+    if not request.get('attachedInviteId'):
+        if not request.get('inviteIds'):
+            if request.get('candidates'):
+                _generateRequestInvites(request, BATCH_SIZE)
 
-        # unclaimed, so create a publicRequestInvite if one doesn't
-        # already exist
-        elif not request.get('publicRequestInviteId'):
-            resp = post_internal(
-                'publicRequestInvites', {
-                    'requestId': request.getId(),
-                    'from': request.get('createdBy')
-                }
-            )
+            # unclaimed, so create a publicRequestInvite if one doesn't
+            # already exist
+            elif not request.get('publicRequestInviteId'):
+                resp = post_internal(
+                    'publicRequestInvites', {
+                        'requestId': request.getId(),
+                        'from': request.get('createdBy')
+                    }
+                )
 
-            if resp[3] == 201:
-                request.set('publicRequestInviteId', resp[0]['_id']).commit()
+                if resp[3] == 201:
+                    request.set('publicRequestInviteId', resp[0]['_id']).commit()
 
 def _removeInvites(request):
     ''' (models.requests.Request) -> NoneType

@@ -152,6 +152,16 @@ class MongoORM:
         '''
 
         return self.updateList(field).pop(index)
+
+    def listRemove(self, field, value):
+        ''' (MongoORM, object, object) -> MongoORM
+        Removes value from the list at field.
+        '''
+
+        l = self.get(field)
+        l.remove(value)
+        self.set(field, l)
+        return self
         
     def get(self, field):
         ''' (MongoORM, object) -> object

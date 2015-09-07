@@ -58,24 +58,8 @@ def init(app):
     '''
 
     app.on_updated_publicRequestInvites += onUpdated
-    app.on_pre_GET_publicRequestInvites += onPreGet
     app.on_fetched_item_publicRequestInvites += onFetchedItem
-
-# on_pre_GET_publicRequestInvites
-def onPreGet(request, lookup):
-    ''' (dict, dict) -> NoneType
-    An Eve hook used prior to a GET request.
-    '''
-
-    if '_id' in lookup:
-
-        # update last updated to trigger fresh fetch each time
-        import models.publicRequestInvites as publicRequestInvites
-        (publicRequestInvites.PublicInvite.fromObjectId(
-                app.data.driver.db,
-                lookup['_id']
-            ).set('_updated', datetime.utcnow()).commit()
-        )
+    app.on_fetched_resource_publicRequestInvites += onFetched
 
 # on_fetched_item_publicRequestInvites
 def onFetchedItem(publicInvite):
@@ -92,6 +76,17 @@ def onFetchedItem(publicInvite):
             **publicInvite
         ).embedView()
     )
+
+# on_fetched_resource_publicRequestInvites
+def onFetched(publicInvites):
+    ''' (dict) -> NoneType
+    An Eve hook used during fetching a list of publicRequestInvites.
+    '''
+
+    # embed each publicRequestInvite
+    if '_items' in publicInvites:
+        for publicInvite in publicInvites['_items']:
+            onFetchedItem(publicInvite)
 
 # on_updated_publicRequestInvites
 def onUpdated(changes, publicInvite):

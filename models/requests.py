@@ -139,13 +139,23 @@ class Request(orm.MongoORM):
         ''' (Request) -> list of models.requestInvites.Invite
         Gets a list of all the invites that belong to this Request.
         '''
+
+        invites = []
         import models.requestInvites as requestInvites
-        return [
-            requestInvites.Invite.fromObjectId(
-                self.db,
-                inviteId
-            ) for inviteId in self.get('inviteIds')
-        ]
+        for inviteId in self.get('inviteIds'):
+            try:
+                invites.append(
+                    requestInvites.Invite.fromObjectId(
+                        self.db,
+                        inviteId
+                    )
+                )
+            except KeyError:
+
+                # invite didn't exist for some reason, so remove it here
+                self.listRemove('inviteIds', inviteId)
+
+        return invites
 
     def pruneExpiredInvites(self):
         ''' (Request) -> Request
@@ -172,10 +182,8 @@ class Request(orm.MongoORM):
         Removes the Invite from this Request.
         '''
 
-        inviteIds = self.get('inviteIds')
         try:
-            inviteIds.remove(invite.getId())
-            self.set('inviteIds', inviteIds)
+            self.listRemove('inviteIds', invite.getId())            
             invite.remove()
         except ValueError:
             pass
