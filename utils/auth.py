@@ -62,14 +62,20 @@ class UserAuth(BasicAuth):
         database.
         '''
 
-        user = app.data.driver.db['users'].find_one({
-            'username': username,
-            'password': password
-        })
-        if (user and '_id' in user):
-            self.set_request_auth_value(user['_id'])
+        try:
+            import models.users as users
+            user = users.User.findOne(
+                app.data.driver.db,
+                username=username,
+                password=password
+            )
 
-        return user
+            # set creation of apiKey to this user
+            self.set_request_auth_value(user.getId())
+            return user
+
+        except ValueError:
+            pass
 
 # deny all (http) requests
 class NoAuth(BasicAuth):
