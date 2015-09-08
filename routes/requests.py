@@ -132,14 +132,14 @@ def init(app):
     app.on_inserted_requests += onInserted
     app.on_fetched_item_requests += onFetchedItem
     app.on_fetched_resource_requests += onFetched
-    app.on_updated_requests += onUpdated
+    app.on_update_requests += onUpdate
 
 # hooks
 
-# on_updated_requests
-def onUpdated(updated, original):
+# on_update_requests
+def onUpdate(updated, original):
     ''' (dict, dict) -> NoneType
-    An Eve hook used after an updated request.
+    An Eve hook used prior to an update.
     '''
 
     import models.requests as requests
@@ -160,12 +160,13 @@ def onUpdated(updated, original):
         if not request.getOriginal('attachedInviteId'):
             import models.requestInvites as requestInvites
             try:
-                request.attachInvite(
-                    requestInvites.Invite.fromObjectId(
-                        app.data.driver.db,
-                        updated['attachedInviteId']
-                    )
+                invite = requestInvites.Invite.fromObjectId(
+                    app.data.driver.db,
+                    updated['attachedInviteId']
                 )
+
+                request.attachInvite(invite)
+                invite.commit()
             except ValueError:
                 abort(422, 'Unable to attach Invite')
         else:

@@ -90,4 +90,4 @@ def _provision(apiKey):
         # inject generated apiKey to doc
         apiKey['apiKey'] = token
     else:
-        abort(422)
+        abort(422, 'deviceId is faulty')

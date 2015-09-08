@@ -57,7 +57,7 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
-    app.on_updated_publicRequestInvites += onUpdated
+    app.on_update_publicRequestInvites += onUpdate
     app.on_fetched_item_publicRequestInvites += onFetchedItem
     app.on_fetched_resource_publicRequestInvites += onFetched
 
@@ -88,16 +88,17 @@ def onFetched(publicInvites):
         for publicInvite in publicInvites['_items']:
             onFetchedItem(publicInvite)
 
-# on_updated_publicRequestInvites
-def onUpdated(changes, publicInvite):
+# on_update_publicRequestInvites
+def onUpdate(changes, publicInvite):
     ''' (dict, dict) -> NoneType
-    An Eve hook used after a publicRequestInvite is updated.
+    An Eve hook used prior to a publicRequestInvite is updated.
     '''
 
     if 'acceptedBy' in changes:
         import models.publicRequestInvites as publicRequestInvites
         _createAcceptedInvite(
             publicRequestInvites.PublicInvite.fromObjectId(
+                app.data.driver.db,
                 publicInvite['_id']
             )
         )
@@ -120,13 +121,14 @@ def _createAcceptedInvite(publicInvite):
         if publicInvite.get('acceptedBy'):
 
             # adding candidate to prep generation of invite
-            request.push('candidate', publicInvite.get('acceptedBy')).commit()
+            request.push('candidates', publicInvite.get('acceptedBy')).commit()
 
             # generate invites
             import routes.requests as requestsRoute
             requestsRoute._generateRequestInvites(request)
     
             # set accepted on the newly generated invite
+            import models.requestInvites as requestInvites
             requestInvites.Invite.findOne(
                 app.data.driver.db,
                 requestId=request.getId()

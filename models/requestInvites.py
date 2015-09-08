@@ -85,6 +85,7 @@ class Invite(orm.MongoORM):
         (users.User.fromObjectId(self.db, self.get('from'))
             .message('requestInviteAccepted', self.getId())
         )
+        return self
 
     def attach(self):
         ''' (Invite) -> Invite

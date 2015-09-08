@@ -77,7 +77,7 @@ def init(app):
     app.on_inserted_requestInvites += onInserted
     app.on_update_requestInvites += onUpdate
     app.on_updated_requestInvites += onUpdated
-    app.on_deleted_item_requestInvites += onDeletedItem
+    app.on_delete_item_requestInvites += onDeleteItem
 
 # hooks
 
@@ -105,7 +105,7 @@ def onFetchedItem(invite, preventDisplay=True):
 
         # prevent display
         del invite
-        if preventDisplay: abort(404)
+        if preventDisplay: abort(404, 'Invite is expired')
 
 # on_fetched_resource_requestInvites
 def onFetched(invites):
@@ -146,12 +146,16 @@ def onUpdate(changes, invite):
     # disallow expired invites
     if requestInvite.isExpired():
         _removeInvite(requestInvite)
-        abort(422)
+        abort(404, 'Invite is expired')
 
     # disallow changes once accepted (only way to refuse an invite is
     # to delete it)
     elif 'accepted' in changes and requestInvite.get('accepted'):
-        abort(422)
+        abort(
+            422,
+            'Cannot change accepted status of an accepted invite; '
+            + 'delete Invite if refusing'
+        )
 
 # on_updated_requestInvites
 def onUpdated(changes, invite):
@@ -164,27 +168,30 @@ def onUpdated(changes, invite):
         requestInvites.Invite.fromObjectId(
             app.data.driver.db,
             invite['_id']
-        ).accept().commit()
+        ).accept()
 
-# on_deleted_item_requestInvites
-def onDeletedItem(invite):
+# on_delete_item_requestInvites
+def onDeleteItem(invite):
     ''' (dict) -> NoneType
-    An Eve hook used after an item is deleted.
+    An Eve hook used prior to an invite being deleted.
     '''
 
-    import models.requests as requests
+    # prevent deletion of attached invites
     import models.requestInvites as requestInvites
-    (requests.Request.fromObjectId(
+    requestInvite = requestInvites.Invite(
+        app.data.driver.db,
+        requestInvites.Invite.collection,
+        **invite
+    )
+
+    # prevent deletion of attached invites
+    if not requestInvite.get('attached'):
+        requests.Request.fromObjectId(
             app.data.driver.db,
             invite['requestId']
-        ).removeInvite(
-            requestInvites.Invite(
-                app.data.driver.db,
-                requestInvites.Invite.collection,
-                **invite
-            )
-        )
-    )
+        ).removeInvite(requestInvite)
+    else:
+        abort(422, 'Cannot delete attached invite')
 
 # helpers
 
