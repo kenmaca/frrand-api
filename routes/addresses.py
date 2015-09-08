@@ -77,7 +77,12 @@ def onUpdate(updates, originalAddress):
                 ).changeAddress(updates['address'], EPSILON)
             )
         except AttributeError:
-            abort(422)
+            abort(
+                422,
+                'Address does not match coordinates within '
+                + str(111 * EPSILON * 1000)
+                + ' metres'
+            )
 
 # on_insert_addresses
 def onInsert(insertAddresses):
@@ -131,4 +136,4 @@ def _uniquePermanent(address):
     })
 
     if existing:
-        abort(422)
+        abort(422, 'Address already exists')

@@ -138,4 +138,4 @@ def _createAcceptedInvite(publicInvite):
             publicInvite.set('acceptedBy', None).commit()
 
     except KeyError:
-        abort(422)
+        abort(422, 'Unable to create accepted invite')
