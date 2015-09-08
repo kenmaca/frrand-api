@@ -159,12 +159,15 @@ def onUpdated(updated, original):
     if 'attachedInviteId' in updated:
         if not request.getOriginal('attachedInviteId'):
             import models.requestInvites as requestInvites
-            request.attachInvite(
-                requestInvites.Invite.fromObjectId(
-                    app.data.driver.db,
-                    updated['attachedInviteId']
+            try:
+                request.attachInvite(
+                    requestInvites.Invite.fromObjectId(
+                        app.data.driver.db,
+                        updated['attachedInviteId']
+                    )
                 )
-            )
+            except ValueError:
+                abort(422, 'Unable to attach Invite')
         else:
             abort(422, 'Already attached')
 

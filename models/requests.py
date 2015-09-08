@@ -214,6 +214,9 @@ class Request(orm.MongoORM):
         if (
             invite.getId() in self.get('inviteIds')
             and invite.get('requestId') == self.getId()
+
+            # ensure that invite has been accepted before attaching
+            and invite.get('accepted')
         ):
 
             # attach
@@ -239,6 +242,6 @@ class Request(orm.MongoORM):
                 self.set('publicRequestInviteId', None)
 
         else:
-            raise ValueError('Invite is not associated with this Request')
+            raise ValueError('Cannot attach Invite to this Request')
 
         return self
