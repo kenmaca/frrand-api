@@ -13,27 +13,42 @@ class APIAuth(TokenAuth):
         to the requested resource.
         '''
 
-        apiKey = app.data.driver.db['apiKeys'].find_one({'apiKey': token})
-        if (apiKey and 'createdBy' in apiKey):
+        try:
+            import models.apiKeys as apiKeys
+            apiKey = apiKeys.APIKey.findOne(
+                app.data.driver.db,
+                apiKey=token
+            )
 
             # set ownership of any resources created/modified by this user
-            self.set_request_auth_value(apiKey['createdBy'])
+            self.set_request_auth_value(apiKey.get('createdBy'))
 
             # logout any other users using this deviceId
-            app.data.driver.db['users'].update(
-                {'deviceId': apiKey['deviceId']},
-                {'$set': {'deviceId': None}},
-                upsert=False
-            )
+            import models.users as users
+            for user in app.data.driver.db['users'].find(
+                {'deviceId': apiKey.get('deviceId')}
+            ):
+
+                # remove from user itself
+                user = users.User(
+                    app.data.driver.db,
+                    users.User.collection,
+                    **user
+                ).set('deviceId', None).commit()
+
+                # now, the actual key
+                apiKey.prune()
 
             # set last used apiKey for this user
-            app.data.driver.db['users'].update(
-                {'_id': apiKey['createdBy']},
-                {'$set': {'deviceId': apiKey['deviceId']}},
-                upsert=False, multi=False
-            )
+            users.User.fromObjectId(
+                app.data.driver.db,
+                apiKey.get('createdBy')
+            ).useApiKey(apiKey).commit()
 
-        return apiKey
+            return apiKey
+
+        except ValueError:
+            pass
 
 # generate apiKey user:pass authentication method
 class UserAuth(BasicAuth):

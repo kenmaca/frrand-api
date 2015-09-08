@@ -14,6 +14,14 @@ class APIKey(orm.MongoORM):
 
         return orm.MongoORM.fromObjectId(db, objectId, APIKey)
 
+    @staticmethod
+    def findOne(db, **query):
+        ''' (pymongo.database.Database) -> APIKey
+        Finds a single APIKey given query.
+        '''
+
+        return orm.MongoORM.findOne(db, APIKey, **query)
+
     def prune(self):
         ''' (APIKey) -> APIKey
         Removes any other APIKeys with the same deviceId to maintain a 1-to-1
