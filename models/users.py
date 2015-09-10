@@ -16,6 +16,14 @@ class User(orm.MongoORM):
 
         return orm.MongoORM.fromObjectId(db, objectId, User)
 
+    @staticmethod
+    def findOne(db, **query):
+        ''' (pymongo.database.Database) -> User
+        Finds a single User given query.
+        '''
+
+        return orm.MongoORM.findOne(db, User, **query)
+
     def selfOwn(self):
         ''' (User) -> User
         Sets the owner of this User to itself. Generally used on creation
