@@ -65,7 +65,7 @@ def onUpdate(updates, originalAddress):
 
     # prevent changing of coordinates
     if 'location' in updates:
-        abort(422)
+        abort(422, 'Coordinates are read-only')
 
     # prevent address changes outside boundaries
     elif 'address' in updates:
