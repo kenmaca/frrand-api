@@ -299,18 +299,20 @@ def _generateRequestInvites(request, invitesInBatch=1):
 
             # adding to list of inviteIds is dependant on
             # on_inserted_requestInvites to get _id
-            resp = post_internal('requestInvites', {
-                'requestId': request.getId(),
-                'from': request.get('createdBy')
-            })
+            resp = post_internal('requestInvites', {})
 
             if resp[3] == 201:
 
                 # set ownership of invite to invitee
-                invite = requestInvites.Invite.fromObjectId(
-                    app.data.driver.db,
-                    resp[0]['_id']
-                ).set('createdBy', candidate.getId()).commit()
+                invite = (
+                    requestInvites.Invite.fromObjectId(
+                        app.data.driver.db,
+                        resp[0]['_id']
+                    ).set('createdBy', candidate.getId())
+                    .set('requestId', request.getId())
+                    .set('from', request.getOwner().getId())
+                    .commit()
+                )
 
                 # add this invite to the parent request list
                 request.addInvite(invite).commit()

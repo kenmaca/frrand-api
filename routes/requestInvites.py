@@ -9,6 +9,7 @@ schema = {
     'requestId': {
         'type': 'objectid',
         'required': True,
+        'readonly': True,
         'data_relation': {
             'resource': 'requests',
             'field': '_id'
@@ -17,6 +18,7 @@ schema = {
     'from': {
         'type': 'objectid',
         'required': True,
+        'readonly': True,
         'data_relation': {
             'resource': 'users',
             'field': '_id'
@@ -31,6 +33,8 @@ schema = {
         'default': False,
         'readonly': True
     },
+
+    # TODO: add to post_internal on creation
     'phone': {
         'type': 'string'
     },
@@ -53,7 +57,8 @@ schema = {
         'data_relation': {
             'resource': 'users',
             'field': '_id'
-        }
+        },
+        'readonly': True
     },
     'complete': {
         'type': 'boolean',

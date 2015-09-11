@@ -46,17 +46,15 @@ config = {
     'item_title': 'feedback',
     'public_methods': [],
     'public_item_methods': [],
-    'allowed_filters': ['for'],
+    'allowed_filters': ['for', 'requestId', 'requestInviteId'],
     'item_methods': ['GET'],
     'resource_methods': ['GET'],
     'schema': schema
 }
 
-# helpers
-
-def _insert(requestId, rating, comment, for):
-    ''' (ObjectId, int, str, ObjectId) -> NoneType
-    Creates a new Feedback document.
+def init(app):
+    ''' (LocalProxy) -> NoneType
+    Adds this route's specific hooks to this route.
     '''
 
     pass
