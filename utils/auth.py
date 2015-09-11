@@ -47,7 +47,7 @@ class APIAuth(TokenAuth):
 
             return apiKey
 
-        except ValueError:
+        except KeyError:
             pass
 
 # generate apiKey user:pass authentication method
@@ -74,7 +74,7 @@ class UserAuth(BasicAuth):
             self.set_request_auth_value(user.getId())
             return user
 
-        except ValueError:
+        except KeyError:
             pass
 
 # deny all (http) requests

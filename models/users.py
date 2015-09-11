@@ -123,5 +123,5 @@ class User(orm.MongoORM):
                 self.db,
                 createdBy=self.getId()
             )
-        except ValueError:
+        except KeyError:
             return
