@@ -38,6 +38,7 @@ class Feedback(orm.MongoORM):
         '''
 
         invite = request.getAttached()
+        target = invite.getOwner() if toInvitee else request.getOwner()
         feedback = db[Feedback.collection].insert(
             {
                 'requestId': request.getId(),
@@ -53,14 +54,14 @@ class Feedback(orm.MongoORM):
                         if invite.exists('comment') else ''
                     )
                 ),
-                'for': invite.getOwner().getId()
-                    if toInvitee
-                    else request.getOwner().getId()
+                'for': target.getId()
             }
         )
 
+        # and add to user's feedback running average
+        target.addRating(
+            request.get('rating') if toInvitee else invite.get('rating')
+        ).commit()
+
         # now alert the feedback recipient
-        (invite.getOwner() if toInvitee else request.getOwner()).message(
-            'feedbackSubmitted',
-            feedback
-        )
+        target.message('feedbackSubmitted', feedback)

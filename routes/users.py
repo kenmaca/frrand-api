@@ -18,6 +18,36 @@ schema = {
         'type': 'boolean',
         'default': True
     },
+    'requestsRecieved': {
+        'type': 'integer',
+        'readonly': True,
+        'default': 0
+    },
+    'requestsDelivered': {
+        'type': 'integer',
+        'readonly': True,
+        'default': 0
+    },
+    'rating': {
+        'type': 'integer',
+        'readonly': True,
+        'default': 0
+    },
+    'numberOfRatings': {
+        'type': 'integer',
+        'readonly': True,
+        'default': 0
+    }
+    'points': {
+        'type': 'integer',
+        'readonly': True,
+        'default': 1
+    },
+    'pendingPoints': {
+        'type': 'integer',
+        'readonly': True,
+        'default': 0
+    }
     'phone': {
         'type': 'string'
     },

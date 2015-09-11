@@ -133,6 +133,11 @@ schema = {
             'rating'
         ]
     }
+    'points': {
+        'type': 'integer',
+        'min': 1,
+        'default': 1
+    }
 }
 
 config = {
@@ -173,6 +178,10 @@ def onUpdate(updated, original):
         app.data.driver.db,
         original['_id']
     ).update(updated)
+
+    # prevent change of points awarded
+    if 'points' in updated:
+        abort(422, 'Awarded points on completion cannot be changed')
 
     # inviteIds have changed
     if 'inviteIds' in updated:
@@ -274,10 +283,13 @@ def onInserted(insertedRequests):
             **request
         )
 
+        # keep aside points for awarding
+        request.getOwner().stashPoints(request.getPoints()).commit()
+
         _addDefaultDestination(request)
         request.matchOwnerAsCandidate()
         _refreshInvites(request)
-        request.commit()        
+        request.commit()
 
 # helpers
 

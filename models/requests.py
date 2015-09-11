@@ -260,6 +260,19 @@ class Request(orm.MongoORM):
 
         self.set('complete', True)
         self.getAttached().complete().commit()
+
+        # transfer points from requester to invitee and update totals
+        (self.getOwner()
+            .spendPoints(self.getPoints())
+            .increment('requestsRecieved')
+            .commit()
+        )
+        (self.getAttached().getOwner()
+            .awardPoints(self.getPoints())
+            .increment('requestsDelivered')
+            .commit()
+        )
+
         return self
 
     def isAttached(self):
@@ -323,3 +336,10 @@ class Request(orm.MongoORM):
             self.db,
             self.get('createdBy')
         )
+
+    def getPoints(self):
+        ''' (Request) -> int
+        Gets the number of points this Request awards on completion.
+        '''
+
+        return self.get('points')

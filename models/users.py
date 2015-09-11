@@ -125,3 +125,55 @@ class User(orm.MongoORM):
             )
         except KeyError:
             return
+
+    def getRating(self):
+        ''' (User) -> int
+        Gets the average rating for this User.
+        '''
+
+        return self.get('rating')
+
+    def addRating(self, rating):
+        ''' (User, int) -> User
+        Adds a rating (1-5) to this User.
+        '''
+
+        self.set(
+            'rating',
+            (
+                self.getRating()
+                + (
+                    (rating - self.getRating())
+                    / (self.get('numberOfRatings') + 1)
+                )
+            )
+        )
+        self.increment('numberOfRatings')
+        return self
+
+    def awardPoints(self, points=1):
+        ''' (User, int) -> User
+        Adds points to this User's points.
+        '''
+
+        self.increment('points', points)
+        return self
+
+    def spendPoints(self, points=1):
+        ''' (User, int) -> User
+        Spends points from pendingPoints.
+        '''
+
+        self.increment('pendingPoints', -points)
+        return self
+
+    def stashPoints(self, points=1):
+        ''' (User, int) -> User
+        Stashes points from points into pendingPoints.
+        '''
+
+        (self
+            .increment('points', -points)
+            .increment('pendingPoints', points)
+        )
+        return self
