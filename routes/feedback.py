@@ -49,6 +49,7 @@ config = {
     'allowed_filters': ['for', 'requestId', 'requestInviteId'],
     'item_methods': ['GET'],
     'resource_methods': ['GET'],
+    'auth_field': None,
     'schema': schema
 }
 
