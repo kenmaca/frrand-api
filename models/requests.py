@@ -245,3 +245,81 @@ class Request(orm.MongoORM):
             raise ValueError('Cannot attach Invite to this Request')
 
         return self
+
+    def isComplete(self):
+        ''' (Request) -> bool
+        Determines whether or not this Request is complete.
+        '''
+
+        return self.get('complete')
+
+    def complete(self):
+        ''' (Request) -> Request
+        Marks this Request as completed.
+        '''
+
+        self.set('complete', True)
+        self.getAttached().complete().commit()
+        return self
+
+    def isAttached(self):
+        ''' (Request) -> bool
+        Determines whether or not this Request has been attached.
+        '''
+
+        try:
+            return bool(self.getAttached())
+        except ValueError:
+            return False
+
+    def isPublic(self):
+        ''' (Request) -> bool
+        Determines whether or not this Request is public.
+        '''
+
+        try:
+            return bool(self.getPublic())
+        except ValueError:
+            return False
+
+    def feedbackSubmitted(self):
+        ''' (Request) -> bool
+        Determines if feedback has been submitted for this Request yet.
+        '''
+
+        return bool(self.get('rating'))
+
+    def getPublic(self):
+        ''' (Request) -> models.publicRequestInvites.PublicInvite
+        Gets the the publicRequestInvite for this Request.
+        '''
+
+        if self.get('publicRequestInviteId'):
+            import models.publicRequestInvites as publicRequestInvites
+            return publicRequestInvites.PublicInvite.fromObjectId(
+                self.db,
+                self.get('publicRequestInviteId')
+            )
+
+    def getAttached(self):
+        ''' (Request) -> models.requestInvites.Invite
+        Gets the currently attached requestInvite for this Request.
+        '''
+
+        if self.get('attachedInviteId'):
+            import models.requestInvites as requestInvites
+            return requestInvites.Invite.fromObjectId(
+                self.db,
+                self.get('attachedInviteId')
+            )
+
+    def getOwner(self):
+        ''' (Request) -> models.users.User
+        Gets the owner of this Request.
+        '''
+
+        import models.users as users
+        return users.User.fromObjectId(
+            self.db,
+            self.get('createdBy')
+        )

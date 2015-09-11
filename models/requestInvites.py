@@ -29,23 +29,15 @@ class Invite(orm.MongoORM):
         Embeds the parent Request as well as any other inaccessable documents.
         '''
 
-        import models.requests as requests
         import models.addresses as addresses
-        import models.users as users
 
         embed = self.view()
-        embed['requestId'] = requests.Request.fromObjectId(
-            self.db,
-            self.get('requestId')
-        ).view()
+        embed['requestId'] = self.getRequest().view()
         embed['requestId']['destination'] = addresses.Address.fromObjectId(
             self.db,
             embed['requestId']['destination']
         ).view()
-        embed['from'] = users.User.fromObjectId(
-            self.db,
-            self.get('from')
-        ).get('username')
+        embed['from'] = self.getRequest().getOwner().get('username')
 
         return embed
 
@@ -79,12 +71,7 @@ class Invite(orm.MongoORM):
         '''
 
         self.set('accepted', True)
-
-        # alert owner
-        import models.users as users
-        (users.User.fromObjectId(self.db, self.get('from'))
-            .message('requestInviteAccepted', self.getId())
-        )
+        self.getOwner().message('requestInviteAccepted', self.getId())
         return self
 
     def attach(self):
@@ -92,12 +79,65 @@ class Invite(orm.MongoORM):
         Attaches this Invite.
         '''
 
-        # alert user that their invite was attached
-        import models.users as users
-        (users.User.fromObjectId(self.db, self.get('createdBy'))
-            .message('requestInviteAttached', self.getId())
+        self.set('attached', True)
+        self.getOwner().message('requestInviteAttached', self.getId())
+        return self
+
+    def complete(self):
+        ''' (Invite) -> Invite
+        Marks this Invite as completed.
+        '''
+
+        self.set('complete', True)
+        self.getOwner().message('requestInviteCompleted', self.getId())
+        return self
+
+    def isAccepted(self):
+        ''' (Invite) -> bool
+        Determines whether or not this Invite is accepted.
+        '''
+
+        return self.get('accepted')
+
+    def isAttached(self):
+        ''' (Invite) -> bool
+        Determines whether or not this Invite is attached.
+        '''
+
+        return self.get('attached')
+
+    def isComplete(self):
+        ''' (Invite) -> bool
+        Determines whether or not this Invite is complete.
+        '''
+
+        return self.get('complete')
+
+    def getRequest(self):
+        ''' (Invite) -> models.requests.Request
+        Gets the parent Request for this Invite.
+        '''
+
+        import models.requests as requests
+        return requests.Request.fromObjectId(
+            self.db,
+            self.get('requestId')
         )
 
-        # set attached
-        self.set('attached', True)
-        return self
+    def getOwner(self):
+        ''' (Invite) -> models.users.User
+        Gets the owner of this Invite.
+        '''
+
+        import models.users as users
+        return users.User.fromObjectId(
+            self.db,
+            self.get('createdBy')
+        )
+
+    def feedbackSubmitted(self):
+        ''' (Invite) -> bool
+        Determines if feedback has been submitted for this Invite yet.
+        '''
+
+        return bool(self.get('rating'))

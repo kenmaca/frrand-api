@@ -7,7 +7,8 @@ schema = {
             'resource': 'requests',
             'field': '_id'
         },
-        'required': True
+        'required': True,
+        'readonly': True
     },
     'requestInviteId': {
         'type': 'objectid',
@@ -15,20 +16,26 @@ schema = {
             'resource': 'requestInvites',
             'field': '_id'
         },
-        'required': True
+        'required': True,
+        'readonly': True
     },
     'rating': {
         'type': 'integer',
         'min': 1,
         'max': 5,
-        'required': True
-    }
+        'required': True,
+        'readonly': True
+    },
     'comment': {
         'type': 'string',
-        'maxlength': 240
+        'maxlength': 240,
+        'readonly': True,
+        'default': ''
     },
     'for': {
         'type': 'objectid',
+        'required': True,
+        'readonly': True,
         'data_relation': {
             'resource': ''
         }
@@ -40,7 +47,16 @@ config = {
     'public_methods': [],
     'public_item_methods': [],
     'allowed_filters': ['for'],
-    'item_methods': ['GET', 'PATCH'],
-    'resource_methods': ['GET', 'POST'],
+    'item_methods': ['GET'],
+    'resource_methods': ['GET'],
     'schema': schema
 }
+
+# helpers
+
+def _insert(requestId, rating, comment, for):
+    ''' (ObjectId, int, str, ObjectId) -> NoneType
+    Creates a new Feedback document.
+    '''
+
+    pass

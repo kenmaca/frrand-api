@@ -54,6 +54,27 @@ schema = {
             'resource': 'users',
             'field': '_id'
         }
+    },
+    'complete': {
+        'type': 'boolean',
+        'default': False,
+        'readonly': True
+    },
+    'rating': {
+        'type': 'integer',
+        'min': 1,
+        'max': 5,
+        'dependencies': [
+            'complete'
+        ]
+    },
+    'comment': {
+        'type': 'string',
+        'maxlength': 240
+        'dependencies': [
+            'complete',
+            'rating'
+        ]
     }
 }
 
@@ -150,12 +171,19 @@ def onUpdate(changes, invite):
 
     # disallow changes once accepted (only way to refuse an invite is
     # to delete it)
-    elif 'accepted' in changes and requestInvite.get('accepted'):
+    elif 'accepted' in changes and requestInvite.isAccepted():
         abort(
             422,
             'Cannot change accepted status of an accepted invite; '
             + 'delete Invite if refusing'
         )
+
+    # invitee is posting feedback
+    elif 'rating' in updated or 'comment' in updated:
+        if not requestInvite.isComplete():
+            abort(422, 'Cannot submit feedback for uncompleted Request')
+        elif requestInvite.feedbackSubmitted():
+            abort(422, 'Cannot alter existing feedback')
 
 # on_updated_requestInvites
 def onUpdated(changes, invite):
@@ -163,12 +191,26 @@ def onUpdated(changes, invite):
     An Eve hook used after update.
     '''
 
+    import models.requestInvites as requestInvites
+    requestInvite = requestInvites.Invite.fromObjectId(
+        app.data.driver.db,
+        invite['_id']
+    )
+
+    # notify requester of accept
     if 'accepted' in changes:
-        import models.requestInvites as requestInvites
-        requestInvites.Invite.fromObjectId(
+        requestInvite.accept()
+
+    # post feedback from invitee
+    if 'rating' in updated or 'comment' in updated:
+
+        # create publicly viewable feedback
+        import models.feedback as feedback
+        feedback.Feedback.new(
             app.data.driver.db,
-            invite['_id']
-        ).accept()
+            requestInvite.getRequest(),
+            False
+        )
 
 # on_delete_item_requestInvites
 def onDeleteItem(invite):
@@ -185,13 +227,10 @@ def onDeleteItem(invite):
     )
 
     # prevent deletion of attached invites
-    if not requestInvite.get('attached'):
-        requests.Request.fromObjectId(
-            app.data.driver.db,
-            invite['requestId']
-        ).removeInvite(requestInvite)
-    else:
+    if requestInvite.isAttached():
         abort(422, 'Cannot delete attached invite')
+    else:
+        _removeInvite(requestInvite)
 
 # helpers
 
@@ -200,11 +239,8 @@ def _removeInvite(invite):
     Removes the Invite from its Request.
     '''
 
-    import models.requests as requests
-    request = requests.Request.fromObjectId(
-        app.data.driver.db,
-        invite.get('requestId')
-    ).removeInvite(invite).commit()
+    request = invite.getRequest()
+    request.removeInvite(invite).commit()
 
     # in case invites have all expired
     import routes.requests as requestsRoute

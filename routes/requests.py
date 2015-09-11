@@ -101,7 +101,8 @@ schema = {
             'resource': 'publicRequestInvites',
             'field': '_id'
         },
-        'default': None
+        'default': None,
+        'readonly': True
     },
     'destination': {
         'type': 'objectid',
@@ -111,6 +112,26 @@ schema = {
         },
 
         # TODO: make mandatory when implemented on client side
+    },
+    'complete': {
+        'type': 'boolean',
+        'default': False
+    },
+    'rating': {
+        'type': 'integer',
+        'min': 1,
+        'max': 5,
+        'dependencies': [
+            'complete'
+        ]
+    },
+    'comment': {
+        'type': 'string',
+        'maxlength': 240
+        'dependencies': [
+            'complete',
+            'rating'
+        ]
     }
 }
 
@@ -129,6 +150,7 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
+    app.on_insert_requests += onInsert
     app.on_inserted_requests += onInserted
     app.on_fetched_item_requests += onFetchedItem
     app.on_fetched_resource_requests += onFetched
@@ -150,27 +172,51 @@ def onUpdate(updated, original):
 
     # inviteIds have changed
     if 'inviteIds' in updated:
-        if not request.getOriginal('attachedInviteId'):
-            _removeInvites(request)
-        else:
+        if request.getOriginal('attachedInviteId'):
             abort(422, 'Cannot change Invites once attached')
+        else:
+            _removeInvites(request)
 
     # owner has attached an invite
     if 'attachedInviteId' in updated:
-        if not request.getOriginal('attachedInviteId'):
-            import models.requestInvites as requestInvites
+        if request.getOriginal('attachedInviteId'):
+            abort(422, 'Already attached')
+        else:
             try:
-                invite = requestInvites.Invite.fromObjectId(
-                    app.data.driver.db,
-                    updated['attachedInviteId']
-                )
-
+                invite = request.getAttached()
                 request.attachInvite(invite)
                 invite.commit()
             except ValueError:
                 abort(422, 'Unable to attach Invite')
+
+    # owner has confirmed completion of this Request
+    if 'complete' in updated:
+        if request.getOriginal('complete'):
+            abort(422, 'Already complete')
+
+        # use getOriginal to disallow attaching and completing in one step
+        elif not request.getOriginal('attached'):
+            abort(422, 'Cannot complete an unattached Request')
         else:
-            abort(422, 'Already attached')
+
+            # set to completed
+            request.complete().commit()
+
+    # owner is posting feedback
+    if 'rating' in updated or 'comment' in updated:
+        if not request.isComplete():
+            abort(422, 'Cannot submit feedback for uncompleted Request')
+        elif request.feedbackSubmitted():
+            abort(422, 'Cannot alter existing feedback')
+        else:
+
+            # create publicly viewable feedback
+            import models.feedback as feedback
+            feedback.Feedback.new(
+                app.data.driver.db,
+                request,
+                True
+            )
 
 # on_fetched_item_requests
 def onFetchedItem(fetchedRequest):
@@ -185,7 +231,7 @@ def onFetchedItem(fetchedRequest):
     )
 
     # prune expired before presenting and refresh
-    if not request.get('attachedInviteId'):
+    if not request.isAttached():
         _refreshInvites(request.pruneExpiredInvites())
         
     fetchedRequest.update(request.commit().embedView())
@@ -199,6 +245,16 @@ def onFetched(fetchedRequests):
     if '_items' in fetchedRequests:
         for request in fetchedRequests['_items']:
             onFetchedItem(request)
+
+# on_insert_requests
+def onInsert(insertedRequests):
+    ''' (list of dict) -> NoneType
+    An Eve hook used prior to insertion.
+    '''
+
+    for request in insertedRequests:
+        if 'complete' in request and request['complete']:
+            abort(422, 'Cannot set completion on Request creation')
 
 # on_inserted_requests
 def onInserted(insertedRequests):
@@ -269,13 +325,9 @@ def _addDefaultDestination(request):
     '''
 
     if not request.exists('destination'):
-        import models.users as users
         import models.addresses as addresses
 
-        user = users.User.fromObjectId(
-            app.data.driver.db,
-            request.get('createdBy')
-        )
+        user = request.getOwner()
         currentLocation = user.getLastLocation()
 
         if currentLocation:
@@ -283,7 +335,7 @@ def _addDefaultDestination(request):
                 address = addresses.Address.findOne(
                     app.data.driver.db,
                     **{
-                        'createdBy': request.get('createdBy'),
+                        'createdBy': user.getId(),
                         'location': {
                             '$near' : {
                                 '$geometry': currentLocation.get('location')
@@ -333,14 +385,14 @@ def _refreshInvites(request):
     '''
 
     # prevent generating anymore invites once attached
-    if not request.get('attachedInviteId'):
+    if not request.isAttached():
         if not request.get('inviteIds'):
             if request.get('candidates'):
                 _generateRequestInvites(request, BATCH_SIZE)
 
             # unclaimed, so create a publicRequestInvite if one doesn't
             # already exist
-            elif not request.get('publicRequestInviteId'):
+            elif not request.isPublic():
                 resp = post_internal(
                     'publicRequestInvites', {
                         'requestId': request.getId(),
@@ -349,7 +401,9 @@ def _refreshInvites(request):
                 )
 
                 if resp[3] == 201:
-                    request.set('publicRequestInviteId', resp[0]['_id']).commit()
+                    request.set(
+                        'publicRequestInviteId', resp[0]['_id']
+                    ).commit()
 
 def _removeInvites(request):
     ''' (models.requests.Request) -> NoneType
