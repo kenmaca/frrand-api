@@ -127,7 +127,7 @@ schema = {
     },
     'comment': {
         'type': 'string',
-        'maxlength': 240
+        'maxlength': 240,
         'dependencies': [
             'complete',
             'rating'
@@ -165,6 +165,10 @@ def onUpdate(updated, original):
     '''
 
     import models.requests as requests
+    originalRequest = requests.Request.fromObjectId(
+        app.data.driver.db,
+        original['_id']
+    )
     request = requests.Request.fromObjectId(
         app.data.driver.db,
         original['_id']
@@ -172,14 +176,14 @@ def onUpdate(updated, original):
 
     # inviteIds have changed
     if 'inviteIds' in updated:
-        if request.getOriginal('attachedInviteId'):
+        if originalRequest.isAttached():
             abort(422, 'Cannot change Invites once attached')
         else:
             _removeInvites(request)
 
     # owner has attached an invite
     if 'attachedInviteId' in updated:
-        if request.getOriginal('attachedInviteId'):
+        if originalRequest.isAttached():
             abort(422, 'Already attached')
         else:
             try:
@@ -191,11 +195,11 @@ def onUpdate(updated, original):
 
     # owner has confirmed completion of this Request
     if 'complete' in updated:
-        if request.getOriginal('complete'):
+        if originalRequest.isComplete():
             abort(422, 'Already complete')
 
-        # use getOriginal to disallow attaching and completing in one step
-        elif not request.getOriginal('attached'):
+        # use original to disallow attaching and completing in one step
+        elif not originalRequest.isAttached():
             abort(422, 'Cannot complete an unattached Request')
         else:
 
@@ -206,7 +210,7 @@ def onUpdate(updated, original):
     if 'rating' in updated or 'comment' in updated:
         if not request.isComplete():
             abort(422, 'Cannot submit feedback for uncompleted Request')
-        elif request.feedbackSubmitted():
+        elif originalRequest.feedbackSubmitted():
             abort(422, 'Cannot alter existing feedback')
         else:
 
@@ -297,10 +301,8 @@ def _generateRequestInvites(request, invitesInBatch=1):
         # only send active users invites
         if candidate.isActive():
 
-            # adding to list of inviteIds is dependant on
-            # on_inserted_requestInvites to get _id
+            # create a stub invite to fill in internally (for security)
             resp = post_internal('requestInvites', {})
-
             if resp[3] == 201:
 
                 # set ownership of invite to invitee

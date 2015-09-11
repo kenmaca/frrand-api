@@ -8,7 +8,6 @@ DEFAULT_EXPIRY = 15
 schema = {
     'requestId': {
         'type': 'objectid',
-        'required': True,
         'readonly': True,
         'data_relation': {
             'resource': 'requests',
@@ -17,7 +16,6 @@ schema = {
     },
     'from': {
         'type': 'objectid',
-        'required': True,
         'readonly': True,
         'data_relation': {
             'resource': 'users',
@@ -75,7 +73,7 @@ schema = {
     },
     'comment': {
         'type': 'string',
-        'maxlength': 240
+        'maxlength': 240,
         'dependencies': [
             'complete',
             'rating'
@@ -184,7 +182,7 @@ def onUpdate(changes, invite):
         )
 
     # invitee is posting feedback
-    elif 'rating' in updated or 'comment' in updated:
+    elif 'rating' in changes or 'comment' in changes:
         if not requestInvite.isComplete():
             abort(422, 'Cannot submit feedback for uncompleted Request')
         elif requestInvite.feedbackSubmitted():
@@ -207,7 +205,7 @@ def onUpdated(changes, invite):
         requestInvite.accept()
 
     # post feedback from invitee
-    if 'rating' in updated or 'comment' in updated:
+    if 'rating' in changes or 'comment' in changes:
 
         # create publicly viewable feedback
         import models.feedback as feedback

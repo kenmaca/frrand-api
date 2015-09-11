@@ -287,7 +287,7 @@ class Request(orm.MongoORM):
         Determines if feedback has been submitted for this Request yet.
         '''
 
-        return bool(self.get('rating'))
+        return self.exists('rating') and bool(self.get('rating'))
 
     def getPublic(self):
         ''' (Request) -> models.publicRequestInvites.PublicInvite

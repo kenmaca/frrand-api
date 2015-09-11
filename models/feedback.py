@@ -38,7 +38,7 @@ class Feedback(orm.MongoORM):
         '''
 
         invite = request.getAttached()
-        feedback = db[Feedback.collection].insert_one(
+        feedback = db[Feedback.collection].insert(
             {
                 'requestId': request.getId(),
                 'requestInviteId': invite.getId(),
@@ -57,10 +57,10 @@ class Feedback(orm.MongoORM):
                     if toInvitee
                     else request.getOwner().getId()
             }
-        ).inserted_id
+        )
 
         # now alert the feedback recipient
-        (invite.getOwner() if toInvite else request.getOwner()).message(
+        (invite.getOwner() if toInvitee else request.getOwner()).message(
             'feedbackSubmitted',
             feedback
         )

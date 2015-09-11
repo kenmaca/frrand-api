@@ -140,4 +140,4 @@ class Invite(orm.MongoORM):
         Determines if feedback has been submitted for this Invite yet.
         '''
 
-        return bool(self.get('rating'))
+        return self.exists('rating') and bool(self.get('rating'))
