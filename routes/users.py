@@ -29,7 +29,7 @@ schema = {
         'default': 0
     },
     'rating': {
-        'type': 'integer',
+        'type': 'float',
         'readonly': True,
         'default': 0
     },
@@ -37,7 +37,7 @@ schema = {
         'type': 'integer',
         'readonly': True,
         'default': 0
-    }
+    },
     'points': {
         'type': 'integer',
         'readonly': True,
@@ -47,7 +47,7 @@ schema = {
         'type': 'integer',
         'readonly': True,
         'default': 0
-    }
+    },
     'phone': {
         'type': 'string'
     },

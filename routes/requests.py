@@ -132,7 +132,7 @@ schema = {
             'complete',
             'rating'
         ]
-    }
+    },
     'points': {
         'type': 'integer',
         'min': 1,

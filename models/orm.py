@@ -197,6 +197,7 @@ class MongoORM:
         '''
 
         self.set(field, self.get(field) + step)
+        return self
 
     def view(self):
         ''' (MongoORM) -> dict
