@@ -191,7 +191,7 @@ class MongoORM:
         except KeyError:
             return False
 
-    def increment(field, step=1):
+    def increment(self, field, step=1):
         ''' (MongoORM, object, int) -> MongoORM
         Adds step to the int at field.
         '''
