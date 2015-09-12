@@ -1,6 +1,5 @@
 #!/usr/local/bin/python3.4
 from run import app
-
 with app.test_request_context():
 
     # prune expired invites
