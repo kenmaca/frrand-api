@@ -1,4 +1,5 @@
 from flask import current_app as app
+from flask import abort
 
 # accuracy to allow range of addresses for given coordinates
 EPSILON = 0.001
