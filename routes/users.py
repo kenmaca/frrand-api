@@ -69,6 +69,9 @@ schema = {
         'type': 'boolean',
         'readonly': True
     },
+    'verificationCode': {
+        'type': 'string'
+    },
 
     # will be updated on auth success, but does not
     # guarantee that the deviceId is valid and contactable
@@ -88,8 +91,9 @@ config = {
     },
     'datasource': {
         'projection': {
-            'username': 1,
-            'active': 1
+            'password': 0,
+            'salt': 0,
+            'deviceId': 0
         }
     },
     'allowed_filters': [],
@@ -104,6 +108,7 @@ def init(app):
     '''
 
     app.on_inserted_users += onInserted
+    app.on_updated_users += onUpdated
 
 # hooks
 
@@ -127,3 +132,27 @@ def onInserted(insertedUsers):
 
         # encrypt password
         user.setPassword(user.get('password')).commit()
+
+        # send verification message if phone included
+        if user.exists('phone'):
+            user.changePhoneNumber(user.get('phone')).commit()
+
+# on_updated_users
+def onUpdated(changes, original):
+    ''' (dict, dict) -> NoneType
+    An Eve hook used after update.
+    '''
+
+    import models.users as users
+    user = users.User.fromObjectId(
+        app.data.driver.db,
+        original['_id']
+    )
+
+    # phone has changed, so reset verify
+    if 'phone' in changes:
+        user.changePhoneNumber(changes['phone']).commit()
+
+    # attempting to verify phone
+    if 'verificationCode' in changes:
+        user.verifyPhone().commit()

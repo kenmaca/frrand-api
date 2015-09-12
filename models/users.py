@@ -1,5 +1,6 @@
 import models.orm as orm
 import lib.gcm as gcm
+import lib.sms as sms
 import bcrypt
 from pymongo import DESCENDING
 
@@ -82,6 +83,16 @@ class User(orm.MongoORM):
                     }
                 ) for apiKey in self.getApiKeys()
             ]
+
+    def sms(self, message):
+        ''' (User, str) -> bool
+        Sends a SMS message to the user's phone number.
+        '''
+
+        if self.exists('phone'):
+            return sms.smsSend(self.get('phone'), message)
+        else:
+            return False
 
     def getApiKeys(self):
         ''' (User) -> list of models.apiKeys.APIKey
@@ -210,4 +221,40 @@ class User(orm.MongoORM):
                 self.get('salt').encode(BCRYPT_ENCODING)
             )
         )
+        return self
+
+    def changePhoneNumber(self, phone):
+        ''' (User, str) -> User
+        Changes this User's phone number.
+        '''
+
+        self.set('phone', phone)
+        self.setVerificationCode()
+        return self
+
+    def setVerificationCode(self):
+        ''' (User) -> User
+        Sets a verification code for this User's phone number.
+        '''
+
+        self.set('phoneVerified', False)
+        self.set('_verificationCode', str(random.randint(100000, 999999)))
+        self.sms(
+            'Your Frrand Verification Code is: %s'
+            % self.get('_verificationCode')
+        )
+        return self
+
+    def verifyPhone(self):
+        ''' (User) -> User
+        Verifies this user's phone number if verificationCode matches 
+        _verificationCode.
+        '''
+
+        if self.get('verificationCode') == self.get('_verificationCode'):
+            self.set('phoneVerified', True)
+            self.set('verificationCode', None)
+            self.message(
+                'phoneVerified': self.get('phone')
+            )
         return self
