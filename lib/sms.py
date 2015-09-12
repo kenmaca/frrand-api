@@ -1,6 +1,7 @@
 from config import SMS_API_KEY
 import requests
 import json
+import re
 
 def smsSend(phoneNumber, message):
     ''' (str, str) -> bool
@@ -12,7 +13,7 @@ def smsSend(phoneNumber, message):
         r = requests.post(
             'http://smsgateway.ca/services/message.svc/%s/%s' % (
                 SMS_API_KEY,
-                phoneNumber
+                re.sub(r'[^\d]+', '', phoneNumber)
             ),
             data=json.dumps(
                 {

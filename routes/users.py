@@ -84,7 +84,7 @@ schema = {
 config = {
     'item_title': 'user',
     'public_methods': ['GET', 'POST'],
-    'public_item_methods': [],
+    'public_item_methods': ['DELETE'],
     'additional_lookup': {
         'url': 'regex("[\w]+")',
         'field': 'username'
@@ -97,7 +97,7 @@ config = {
         }
     },
     'allowed_filters': [],
-    'item_methods': ['GET', 'PATCH'],
+    'item_methods': ['GET', 'PATCH', 'DELETE'],
     'resource_methods': ['GET', 'POST'],
     'schema': schema
 }

@@ -2,6 +2,7 @@ import models.orm as orm
 import lib.gcm as gcm
 import lib.sms as sms
 import bcrypt
+import random
 from pymongo import DESCENDING
 
 BCRYPT_ROUNDS = 8
@@ -255,6 +256,7 @@ class User(orm.MongoORM):
             self.set('phoneVerified', True)
             self.set('verificationCode', None)
             self.message(
-                'phoneVerified': self.get('phone')
+                'phoneVerified',
+                self.get('phone')
             )
         return self
