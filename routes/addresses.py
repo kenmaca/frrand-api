@@ -43,6 +43,10 @@ config = {
     'allowed_filters': [],
     'item_methods': ['GET', 'PATCH'],
     'resource_methods': ['GET', 'POST'],
+    'mongo_indexes': {
+        '_id_': [('_id', 1)],
+        'location_2dsphere': [('location', '2dsphere')]
+    },
     'schema': schema
 }
 

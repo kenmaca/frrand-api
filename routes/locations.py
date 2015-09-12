@@ -54,6 +54,11 @@ config = {
     'public_item_methods': [],
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
+    'mongo_indexes': {
+        '_id_': [('_id', 1)],
+        'location_2dsphere': [('location', '2dsphere')],
+        'region_2dsphere': [('region', '2dsphere')]
+    },
     'schema': schema
 }
 
