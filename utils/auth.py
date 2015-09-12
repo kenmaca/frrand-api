@@ -66,13 +66,14 @@ class UserAuth(BasicAuth):
             import models.users as users
             user = users.User.findOne(
                 app.data.driver.db,
-                username=username,
-                password=password
+                username=username
             )
 
             # set creation of apiKey to this user
             self.set_request_auth_value(user.getId())
-            return user
+
+            # and test password
+            return user.authenticate(password)
 
         except KeyError:
             pass

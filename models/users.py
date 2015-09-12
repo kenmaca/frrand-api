@@ -1,6 +1,10 @@
 import models.orm as orm
 import lib.gcm as gcm
+import bcrypt
 from pymongo import DESCENDING
+
+BCRYPT_ROUNDS = 8
+BCRYPT_ENCODING = 'utf-8'
 
 class User(orm.MongoORM):
     ''' A representation of an User in Frrand.
@@ -175,5 +179,35 @@ class User(orm.MongoORM):
         (self
             .increment('points', -points)
             .increment('pendingPoints', points)
+        )
+        return self
+
+    def authenticate(self, password):
+        ''' (User, str) -> bool
+        Determines whether or not the plain-text password matches the
+        password stored in this User.
+        '''
+
+        return (
+            bcrypt.hashpw(
+                password.encode(BCRYPT_ENCODING),
+                self.get('salt').encode(BCRYPT_ENCODING)
+            )
+            == self.get('password')
+        )
+
+    def setPassword(self, password):
+        ''' (User, str) -> User
+        Encrypts the given plain-text password and securely stores it in
+        this User.
+        '''
+
+        self.set('salt', bcrypt.gensalt(BCRYPT_ROUNDS))
+        self.set(
+            'password', 
+            bcrypt.hashpw(
+                password.encode(BCRYPT_ENCODING),
+                self.get('salt').encode(BCRYPT_ENCODING)
+            )
         )
         return self

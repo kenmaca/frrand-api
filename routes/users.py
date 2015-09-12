@@ -14,6 +14,10 @@ schema = {
         'maxlength': 100,
         'required': True
     },
+    'salt': {
+        'type': 'string',
+        'readonly': True
+    }
     'active': {
         'type': 'boolean',
         'default': True
@@ -115,8 +119,11 @@ def onInserted(insertedUsers):
     for user in insertedUsers:
 
         # set newly created user as self-owning
-        users.User(
+        user = users.User(
             app.data.driver.db,
             users.User.collection,
             **user
-        ).selfOwn().commit()
+        ).selfOwn()
+
+        # encrypt password
+        user.setPassword(user.get('password')).commit()
