@@ -17,7 +17,7 @@ schema = {
     'salt': {
         'type': 'string',
         'readonly': True
-    }
+    },
     'active': {
         'type': 'boolean',
         'default': True
