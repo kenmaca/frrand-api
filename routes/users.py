@@ -53,7 +53,8 @@ schema = {
         'default': 0
     },
     'phone': {
-        'type': 'string'
+        'type': 'string',
+        'required': True
     },
     'phoneMethods': {
         'type': 'list',
@@ -62,6 +63,10 @@ schema = {
             'phone'
         ],
         'dependencies': [
+            'phone'
+        ],
+        'default': [
+            'sms',
             'phone'
         ]
     },
