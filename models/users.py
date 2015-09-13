@@ -266,7 +266,7 @@ class User(orm.MongoORM):
             )
         return self
 
-    def setUsername(self, name=None, length=3):
+    def setUsername(self, name=None, min=2, max=4):
         ''' (User, str) -> User
         Sets the username of this User to name if name is provided, otherwise
         generates a random username to assign this User to.
@@ -283,7 +283,9 @@ class User(orm.MongoORM):
                 username = name
             else:
                 username = '-'.join(
-                    [random.choice(adjs) for i in range(length - 1)]
+                    [random.choice(adjs) for i in range(
+                        random.randint(min, max) - 1
+                    )]
                     + [random.choice(nouns)]
                 )
 
