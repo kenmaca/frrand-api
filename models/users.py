@@ -266,7 +266,7 @@ class User(orm.MongoORM):
             )
         return self
 
-    def setUsername(self, name=None, length=4):
+    def setUsername(self, name=None, length=3):
         ''' (User, str) -> User
         Sets the username of this User to name if name is provided, otherwise
         generates a random username to assign this User to.
@@ -289,7 +289,7 @@ class User(orm.MongoORM):
 
             # test if username is valid
             try:
-                Users.findOne(self.db, username=username)
+                User.findOne(self.db, username=username)
 
                 # break out if name was specified, o/w re-gen
                 if name:
