@@ -4,8 +4,7 @@ schema = {
     'username': {
         'type': 'string',
         'minlength': 4,
-        'maxlength': 18,
-        'required': True,
+        'maxlength': 32,
         'unique': True
     },
     'password': {
@@ -135,12 +134,17 @@ def onInserted(insertedUsers):
             **user
         ).selfOwn()
 
+        # generate username if missing
+        user.setUsername()
+        
         # encrypt password
-        user.setPassword(user.get('password')).commit()
+        user.setPassword(user.get('password'))
 
         # send verification message if phone included
         if user.exists('phone'):
-            user.changePhoneNumber(user.get('phone')).commit()
+            user.changePhoneNumber(user.get('phone'))
+
+        user.commit()
 
 # on_updated_users
 def onUpdated(changes, original):
@@ -161,3 +165,7 @@ def onUpdated(changes, original):
     # attempting to verify phone
     if 'verificationCode' in changes:
         user.verifyPhone().commit()
+
+    # if username has been changed
+    if 'username' in changes:
+        user.setUsername(changes['username']).commit()

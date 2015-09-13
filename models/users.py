@@ -7,6 +7,8 @@ from pymongo import DESCENDING
 
 BCRYPT_ROUNDS = 8
 BCRYPT_ENCODING = 'utf-8'
+GEN_NOUNS = '/home/api/frrand/lib/nouns'
+GEN_ADJS = '/home/api/frrand/lib/adjectives'
 
 class User(orm.MongoORM):
     ''' A representation of an User in Frrand.
@@ -263,3 +265,37 @@ class User(orm.MongoORM):
                 self.get('phone')
             )
         return self
+
+    def setUsername(self, name=None, length=4):
+        ''' (User, str) -> User
+        Sets the username of this User to name if name is provided, otherwise
+        generates a random username to assign this User to.
+        '''
+
+        # build word lists
+        with open(GEN_NOUNS) as n:
+            nouns = n.read().splitlines()
+        with open(GEN_ADJS) as a:
+            adjs = a.read().splitlines()
+
+        while True:
+            if name:
+                username = name
+            else:
+                username = '-'.join(
+                    [random.choice(adjs) for i in range(length - 1)]
+                    + [random.choice(nouns)]
+                )
+
+            # test if username is valid
+            try:
+                Users.findOne(self.db, username=username)
+
+                # break out if name was specified, o/w re-gen
+                if name:
+                    raise ValueError('Username already exists')
+
+            # doesn't exist, good to go
+            except KeyError:
+                self.set('username', username)
+                return self
