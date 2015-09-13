@@ -3,6 +3,7 @@ import lib.gcm as gcm
 import lib.sms as sms
 import bcrypt
 import random
+import re
 from pymongo import DESCENDING
 
 BCRYPT_ROUNDS = 8
@@ -283,10 +284,10 @@ class User(orm.MongoORM):
                 username = name
             else:
                 username = '-'.join(
-                    [random.choice(adjs) for i in range(
+                    [re.sub(r'\W+', '', random.choice(adjs)) for i in range(
                         random.randint(min, max) - 1
                     )]
-                    + [random.choice(nouns)]
+                    + [re.sub(r'\W+', '', random.choice(nouns))]
                 )
 
             # test if username is valid
