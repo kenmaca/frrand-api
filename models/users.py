@@ -267,8 +267,9 @@ class User(orm.MongoORM):
             )
         return self
 
-    def setUsername(self, name=None, min=2, max=4):
-        ''' (User, str) -> User
+    @staticmethod
+    def generateUsername(db, min=2, max=2):
+        ''' (pymongo.database.Database, str) -> User
         Sets the username of this User to name if name is provided, otherwise
         generates a random username to assign this User to.
         '''
@@ -280,25 +281,20 @@ class User(orm.MongoORM):
             adjs = a.read().splitlines()
 
         while True:
-            if name:
-                username = name
-            else:
-                username = '-'.join(
-                    [re.sub(r'\W+', '', random.choice(adjs)) for i in range(
-                        random.randint(min, max) - 1
-                    )]
-                    + [re.sub(r'\W+', '', random.choice(nouns))]
-                )
+            username = '-'.join(
+                [re.sub(r'\W+', '', random.choice(adjs)) for i in range(
+                    random.randint(min, max) - 1
+                )]
+                + [
+                    re.sub(r'\W+', '', random.choice(nouns))
+                    + str(random.randint(1,999))
+                ]
+            )
 
             # test if username is valid
             try:
-                User.findOne(self.db, username=username)
-
-                # break out if name was specified, o/w re-gen
-                if name:
-                    raise ValueError('Username already exists')
+                User.findOne(db, username=username)
 
             # doesn't exist, good to go
             except KeyError:
-                self.set('username', username)
-                return self
+                return username
