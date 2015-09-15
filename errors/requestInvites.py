@@ -32,3 +32,9 @@ def abortImmutableFeedback():
     '''
 
     error.requests.abortImmutableFeedback()
+
+def abortDeleteAttached():
+    ''' Raised when attempting to delete an attached Invite.
+    '''
+
+    abort(422, 'Cannot delete attached invite')
