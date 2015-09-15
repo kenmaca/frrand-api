@@ -101,6 +101,7 @@ config = {
         }
     },
     'allowed_filters': [],
+    'extra_response_fields': ['username'],
     'item_methods': ['GET', 'PATCH', 'DELETE'],
     'resource_methods': ['GET', 'POST'],
     'schema': schema
@@ -111,10 +112,26 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
+    app.on_insert_users += onInsert
     app.on_inserted_users += onInserted
     app.on_updated_users += onUpdated
 
 # hooks
+
+# on_insert_users
+def onInsert(insertUsers):
+    ''' (list of dict) -> NoneType
+    An Eve hook used prior to insertion.
+    '''
+
+    import models.users as users
+    for user in insertUsers:
+
+        # generate username if it wasn't specified
+        if 'username' not in user:
+            user['username'] = users.User.generateUsername(
+                app.data.driver.db
+            )
 
 # on_inserted_users
 def onInserted(insertedUsers):
@@ -125,18 +142,15 @@ def onInserted(insertedUsers):
     '''
 
     import models.users as users
-    for user in insertedUsers:
+    for userDict in insertedUsers:
 
         # set newly created user as self-owning
         user = users.User(
             app.data.driver.db,
             users.User.collection,
-            **user
+            **userDict
         ).selfOwn()
 
-        # generate username if missing
-        user.setUsername()
-        
         # encrypt password
         user.setPassword(user.get('password'))
 
