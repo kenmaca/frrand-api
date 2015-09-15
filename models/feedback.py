@@ -1,4 +1,5 @@
 import models.orm as orm
+import gcm.feedback
 
 class Feedback(orm.MongoORM):
     ''' A representation of Feedback in Frrand.
@@ -64,4 +65,4 @@ class Feedback(orm.MongoORM):
         ).commit()
 
         # now alert the feedback recipient
-        target.message('feedbackSubmitted', feedback)
+        target.message(*gcm.feedback.feedbackSubmitted(feedback))

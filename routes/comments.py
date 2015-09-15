@@ -1,4 +1,5 @@
 from flask import current_app as app, g
+import gcm.comments
 
 schema = {
     'requestId': {
@@ -61,6 +62,5 @@ def onInserted(insertedComments):
 
         # now message request owner
         comment.getRequest().getOwner().message(
-            'newRequestComment',
-            comment.get('requestId')
+            *gcm.comments.new(comment.getId())
         )

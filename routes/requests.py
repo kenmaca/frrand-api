@@ -2,6 +2,7 @@ from flask import current_app as app
 from eve.methods.post import post_internal
 from datetime import datetime
 import errors.requests
+import gcm.requests
 
 # number of invites to send at a time
 BATCH_SIZE = 100
@@ -332,7 +333,7 @@ def _generateRequestInvites(request, invitesInBatch=1):
                 request.addInvite(invite).commit()
 
                 # and finally, send gcm out
-                candidate.message('requestInvite', invite.getId())
+                candidate.message(*gcm.requests.newInvite(invite.getId()))
 
 def _addDefaultDestination(request):
     ''' (models.requests.Request) -> NoneType
@@ -383,7 +384,7 @@ def _addDefaultDestination(request):
                     ).commit()
 
                     # alert owner that an address was created for them
-                    user.message('addressCreated', address.getId())
+                    user.message(*gcm.requests.created(address.getId()))
 
             # finally, set destination to either closest or temp address
             request.set('destination', address.getId())

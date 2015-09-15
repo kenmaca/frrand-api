@@ -1,5 +1,6 @@
 from flask import current_app as app
 from eve.methods.post import post_internal
+import gcm.locations
 
 # the number of times a location needs to be reported in a row
 # to be considered a stationary location
@@ -120,6 +121,5 @@ def _convertToAddress(location):
                 app.data.driver.db,
                 location.get('createdBy')
             ).message(
-                'addressCreated',
-                address.getId()
+                *gcm.locations.created()
             )

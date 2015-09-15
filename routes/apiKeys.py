@@ -1,6 +1,7 @@
 from utils.auth import UserAuth
 from flask import current_app as app
 import errors.apiKeys
+import gcm.apiKeys
 import random
 import string
 
@@ -79,12 +80,11 @@ def _provision(apiKey):
 
     # only insert into MongoDB if GCM went through
     if user.message(
-        'apiKey',
-        {
-            'apiKey': token,
-            'userId': user.getId()
-        },
-        apiKey['deviceId']
+        *gcm.apiKeys.loggedIn(
+            token,
+            user.getId(),
+            apiKey['deviceId']
+        )
     ):
 
         # inject generated apiKey to doc
