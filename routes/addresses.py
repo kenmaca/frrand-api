@@ -1,5 +1,5 @@
 from flask import current_app as app
-from flask import abort
+import errors.addresses
 
 # accuracy to allow range of addresses for given coordinates
 EPSILON = 0.001
@@ -70,7 +70,7 @@ def onUpdate(updates, originalAddress):
 
     # prevent changing of coordinates
     if 'location' in updates:
-        abort(422, 'Coordinates are read-only')
+        errors.addresses.abortImmutableCoordinates()
 
     # prevent address changes outside boundaries
     elif 'address' in updates:
@@ -82,12 +82,7 @@ def onUpdate(updates, originalAddress):
                 ).changeAddress(updates['address'], EPSILON)
             )
         except AttributeError:
-            abort(
-                422,
-                'Address does not match coordinates within '
-                + str(111 * EPSILON * 1000)
-                + ' metres'
-            )
+            errors.addresses.abortAddressMismatch()
 
 # on_insert_addresses
 def onInsert(insertAddresses):
@@ -141,4 +136,4 @@ def _uniquePermanent(address):
     })
 
     if existing:
-        abort(422, 'Address already exists')
+        errors.addresses.abortAddressUniqueness()

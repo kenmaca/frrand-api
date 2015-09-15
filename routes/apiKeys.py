@@ -1,6 +1,6 @@
 from utils.auth import UserAuth
 from flask import current_app as app
-from flask import abort
+import errors.apiKeys
 import random
 import string
 
@@ -90,4 +90,4 @@ def _provision(apiKey):
         # inject generated apiKey to doc
         apiKey['apiKey'] = token
     else:
-        abort(422, 'deviceId is faulty')
+        errors.apiKeys.abortFaultyDeviceId()

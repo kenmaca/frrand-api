@@ -1,5 +1,5 @@
 from flask import current_app as app
-from flask import abort
+import errors.publicRequestInvites
 
 schema = {
     'requestId': {
@@ -138,4 +138,4 @@ def _createAcceptedInvite(publicInvite):
             publicInvite.set('acceptedBy', None).commit()
 
     except KeyError:
-        abort(422, 'Unable to create accepted invite')
+        errors.publicRequestInvites.abortUnknownRequest()

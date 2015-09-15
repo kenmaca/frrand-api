@@ -1,6 +1,6 @@
 from flask import current_app as app
-from flask import abort
 from datetime import datetime
+import errors.requestInvites
 
 # default expiry time of each requestInvite until deletion in minutes
 DEFAULT_EXPIRY = 15
@@ -129,7 +129,7 @@ def onFetchedItem(invite, preventDisplay=True):
 
         # prevent display
         del invite
-        if preventDisplay: abort(404, 'Invite is expired')
+        if preventDisplay: errors.requestInvites.abortInviteExpired()
 
 # on_fetched_resource_requestInvites
 def onFetched(invites):
@@ -170,23 +170,19 @@ def onUpdate(changes, invite):
     # disallow expired invites
     if requestInvite.isExpired():
         _removeInvite(requestInvite)
-        abort(404, 'Invite is expired')
+        errors.requestInvites.abortInviteExpired()
 
     # disallow changes once accepted (only way to refuse an invite is
     # to delete it)
     elif 'accepted' in changes and requestInvite.isAccepted():
-        abort(
-            422,
-            'Cannot change accepted status of an accepted invite; '
-            + 'delete Invite if refusing'
-        )
+        errors.requestInvites.abortImmutableAccepted()
 
     # invitee is posting feedback
     elif 'rating' in changes or 'comment' in changes:
         if not requestInvite.isComplete():
-            abort(422, 'Cannot submit feedback for uncompleted Request')
+            errors.requestInvites.abortFeedBackUncompleted()
         elif requestInvite.feedbackSubmitted():
-            abort(422, 'Cannot alter existing feedback')
+            errors.requestInvites.abortImmutableFeedback()
 
 # on_updated_requestInvites
 def onUpdated(changes, invite):
@@ -231,7 +227,7 @@ def onDeleteItem(invite):
 
     # prevent deletion of attached invites
     if requestInvite.isAttached():
-        abort(422, 'Cannot delete attached invite')
+        errors.requestInvites.abortDeleteAttached()
     else:
         _removeInvite(requestInvite)
 

@@ -1,7 +1,7 @@
 from flask import current_app as app
-from flask import abort
 from eve.methods.post import post_internal
 from datetime import datetime
+import errors.requests
 
 # number of invites to send at a time
 BATCH_SIZE = 100
@@ -181,35 +181,35 @@ def onUpdate(updated, original):
 
     # prevent change of points awarded
     if 'points' in updated:
-        abort(422, 'Awarded points on completion cannot be changed')
+        errors.requests.abortImmutablePoints()
 
     # inviteIds have changed
     if 'inviteIds' in updated:
         if originalRequest.isAttached():
-            abort(422, 'Cannot change Invites once attached')
+            errors.requests.abortImmutableInvitesOnAttached()
         else:
             _removeInvites(request)
 
     # owner has attached an invite
     if 'attachedInviteId' in updated:
         if originalRequest.isAttached():
-            abort(422, 'Already attached')
+            errors.requests.abortAlreadyAttached()
         else:
             try:
                 invite = request.getAttached()
                 request.attachInvite(invite)
                 invite.commit()
             except ValueError:
-                abort(422, 'Unable to attach Invite')
+                errors.requests.abortAttachInvite()
 
     # owner has confirmed completion of this Request
     if 'complete' in updated:
         if originalRequest.isComplete():
-            abort(422, 'Already complete')
+            errors.requests.abortComplete()
 
         # use original to disallow attaching and completing in one step
         elif not originalRequest.isAttached():
-            abort(422, 'Cannot complete an unattached Request')
+            errors.requests.abortCompleteUnattached()
         else:
 
             # set to completed
@@ -218,9 +218,9 @@ def onUpdate(updated, original):
     # owner is posting feedback
     if 'rating' in updated or 'comment' in updated:
         if not request.isComplete():
-            abort(422, 'Cannot submit feedback for uncompleted Request')
+            errors.requests.abortFeedbackUncompleted()
         elif originalRequest.feedbackSubmitted():
-            abort(422, 'Cannot alter existing feedback')
+            errors.requests.abortImmutableFeedback()
         else:
 
             # create publicly viewable feedback
@@ -267,7 +267,7 @@ def onInsert(insertedRequests):
 
     for request in insertedRequests:
         if 'complete' in request and request['complete']:
-            abort(422, 'Cannot set completion on Request creation')
+            errors.requests.abortCompleteCreation()
 
 # on_inserted_requests
 def onInserted(insertedRequests):
@@ -287,7 +287,7 @@ def onInserted(insertedRequests):
         request.getOwner().stashPoints(request.getPoints()).commit()
 
         _addDefaultDestination(request)
-        request.matchOwnerAsCandidate()
+        request.matchAllCandidates()
         _refreshInvites(request)
         request.commit()
 
@@ -391,7 +391,7 @@ def _addDefaultDestination(request):
         # do not allow creation of Request if no location data at all
         else:
             request.remove()
-            abort(422, 'No location history exists')
+            errors.requests.abortDestinationUnresolvable()
 
 def _refreshInvites(request):
     ''' (models.requests.Request) -> NoneType
