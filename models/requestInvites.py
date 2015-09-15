@@ -1,7 +1,7 @@
 import models.orm as orm
 from datetime import datetime, timedelta
 from pytz import UTC
-import gcm.requestInvites
+import messages.requestInvites
 
 class Invite(orm.MongoORM):
     ''' A representation of an Invite for a Request in Frrand.
@@ -73,7 +73,7 @@ class Invite(orm.MongoORM):
 
         self.set('accepted', True)
         self.getRequest().getOwner().message(
-            *gcm.requestInvites.accepted(self.getId())
+            *messages.requestInvites.accepted(self.getId())
         )
         return self
 
@@ -84,7 +84,7 @@ class Invite(orm.MongoORM):
 
         self.set('attached', True)
         self.getOwner().message(
-            *gcm.requestInvites.attached(self.getId())
+            *messages.requestInvites.attached(self.getId())
         )
         return self
 
@@ -95,7 +95,7 @@ class Invite(orm.MongoORM):
 
         self.set('complete', True)
         self.getOwner().message(
-            *gcm.requestInvites.completed(self.getId())
+            *messages.requestInvites.completed(self.getId())
         )
         return self
 
