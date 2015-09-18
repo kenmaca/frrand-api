@@ -7,6 +7,7 @@ import routes.requestInvites
 import routes.publicRequestInvites
 import routes.feedback
 import routes.comments
+import routes.profiles
 from config import *
 
 # Routes
@@ -19,7 +20,8 @@ DOMAIN = {
     'requestInvites': routes.requestInvites.config,
     'publicRequestInvites': routes.publicRequestInvites.config,
     'feedback': routes.feedback.config,
-    'comments': routes.comments.config
+    'comments': routes.comments.config,
+    'profiles': routes.profiles.config
 }
 
 # Utils
