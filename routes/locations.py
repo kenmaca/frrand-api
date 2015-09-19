@@ -79,16 +79,17 @@ def onInserted(insertedLocations):
 
     import models.locations as locations
     for location in insertedLocations:
-        _convertToAddress(
-            locations.Location(
-                app.data.driver.db,
-                locations.Location.collection,
-                **location
-            ).setCurrent()
-            .mergePrevious(STATIONARY_THRESHOLD, ACCURACY)
-            .buildTravelRegion(LIMIT_REGION)
-            .commit()
-        )
+        if 'createdBy' in location:
+            _convertToAddress(
+                locations.Location(
+                    app.data.driver.db,
+                    locations.Location.collection,
+                    **location
+                ).setCurrent()
+                .mergePrevious(STATIONARY_THRESHOLD, ACCURACY)
+                .buildTravelRegion(LIMIT_REGION)
+                .commit()
+            )
 
 # helpers
 

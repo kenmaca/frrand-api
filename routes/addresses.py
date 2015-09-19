@@ -92,7 +92,10 @@ def onInsert(insertAddresses):
 
     for address in insertAddresses:
         _approximate(address)
-        _uniquePermanent(address)
+
+        # skip if created internally
+        if 'createdBy' in address:
+            _uniquePermanent(address)
 
 # on_inserted_addresses
 def onInserted(insertedAddresses):

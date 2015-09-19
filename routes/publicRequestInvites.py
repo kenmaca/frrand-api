@@ -70,9 +70,8 @@ def onPreGet(request, lookup):
                 }
             }
 
-        # otherwise, just sort by time
         except AttributeError:
-            lookup['$orderby'] = {'_created': DESCENDING}
+            pass
 
 # on_fetched_item_publicRequestInvites
 def onFetchedItem(publicInvite):

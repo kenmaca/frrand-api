@@ -278,19 +278,20 @@ def onInserted(insertedRequests):
 
     import models.requests as requests
     for request in insertedRequests:
-        request = requests.Request(
-            app.data.driver.db,
-            requests.Request.collection,
-            **request
-        )
+        if 'createdBy' in request:
+            request = requests.Request(
+                app.data.driver.db,
+                requests.Request.collection,
+                **request
+            )
 
-        # keep aside points for awarding
-        request.getOwner().stashPoints(request.getPoints()).commit()
-
-        _addDefaultDestination(request)
-        request.matchAllCandidates()
-        _refreshInvites(request)
-        request.commit()
+            # keep aside points for awarding
+            request.getOwner().stashPoints(request.getPoints()).commit()
+    
+            _addDefaultDestination(request)
+            request.matchAllCandidates()
+            _refreshInvites(request)
+            request.commit()
 
 # helpers
 

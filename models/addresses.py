@@ -39,7 +39,7 @@ class Address(orm.MongoORM):
             except Exception:
 
                 # TODO: try another geocoding service
-                address['address'] = 'Unknown'
+                self.set('address', 'Unknown')
 
         return self
 

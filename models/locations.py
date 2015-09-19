@@ -10,6 +10,14 @@ class Location(orm.MongoORM):
     collection = 'locations'
 
     @staticmethod
+    def fromObjectId(db, objectId):
+        ''' (pymongo.database.Database, bson.ObjectId) -> Location
+        Creates a Location directly from database with an ObjectId of objectId.
+        '''
+
+        return orm.MongoORM.fromObjectId(db, objectId, Location)
+
+    @staticmethod
     def findOne(db, **query):
         ''' (pymongo.database.Database, bson.ObjectId) -> Location
         Creates a Location directly from database with an ObjectId of objectId.
@@ -23,14 +31,16 @@ class Location(orm.MongoORM):
         as not.
         '''
 
-        self.source.update(
-            {
-                'createdBy': self.get('createdBy'),
-                'current': True
-            },
-            {'$set': {'current': False}},
-            upsert=False, multi=True
-        )
+        if self.exists('createdBy'):
+            self.source.update(
+                {
+                    'createdBy': self.get('createdBy'),
+                    'current': True
+                },
+                {'$set': {'current': False}},
+                upsert=False, multi=True
+            )
+
         self.set('current', True)
         return self
 
