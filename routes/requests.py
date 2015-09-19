@@ -368,9 +368,22 @@ def _addDefaultDestination(request):
             # otherwise, create a temporary address based on the user's
             # current location
             except KeyError:
-                resp = post_internal('addresses', {
-                    'location': currentLocation.get('location')
-                })
+                query = {'location': currentLocation.get('location')}
+
+                # try to see if there was a temporary address for this location
+                # and inject address in if there was
+                try:
+                    query['address'] = addresses.Address.findOne(
+                        app.data.driver.db,
+                        **{
+                            'createdBy': user.getId(),
+                            'location': currentLocation.get('location')
+                        }
+                    ).get('address')
+                except KeyError:
+                    pass
+
+                resp = post_internal('addresses', query)
 
                 if resp[3] == 201:
 
