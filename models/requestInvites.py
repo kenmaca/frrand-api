@@ -38,7 +38,6 @@ class Invite(orm.MongoORM):
             self.db,
             embed['requestId']['destination']
         ).view()
-        embed['from'] = self.getRequest().getOwner().get('username')
 
         return embed
 

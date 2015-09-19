@@ -325,7 +325,6 @@ def _generateRequestInvites(request, invitesInBatch=1):
                         resp[0]['_id']
                     ).set('createdBy', candidate.getId())
                     .set('requestId', request.getId())
-                    .set('from', request.getOwner().getId())
                     .commit()
                 )
 
@@ -412,8 +411,7 @@ def _refreshInvites(request):
             elif not request.isPublic():
                 resp = post_internal(
                     'publicRequestInvites', {
-                        'requestId': request.getId(),
-                        'from': request.get('createdBy')
+                        'requestId': request.getId()
                     }
                 )
 

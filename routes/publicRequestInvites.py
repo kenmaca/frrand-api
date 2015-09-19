@@ -10,27 +10,6 @@ schema = {
             'field': '_id'
         }
     },
-    'from': {
-        'type': 'objectid',
-        'required': True,
-        'data_relation': {
-            'resource': 'users',
-            'field': '_id'
-        }
-    },
-    'phone': {
-        'type': 'string'
-    },
-    'phoneMethods': {
-        'type': 'list',
-        'allowed': [
-            'sms',
-            'phone'
-        ],
-        'dependencies': [
-            'phone'
-        ]
-    },
     'acceptedBy': {
         'type': 'objectid',
         'data_relation': {

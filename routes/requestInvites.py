@@ -14,14 +14,6 @@ schema = {
             'field': '_id'
         }
     },
-    'from': {
-        'type': 'objectid',
-        'readonly': True,
-        'data_relation': {
-            'resource': 'users',
-            'field': '_id'
-        }
-    },
     'accepted': {
         'type': 'boolean',
         'default': False
@@ -30,21 +22,6 @@ schema = {
         'type': 'boolean',
         'default': False,
         'readonly': True
-    },
-
-    # TODO: add to post_internal on creation
-    'phone': {
-        'type': 'string'
-    },
-    'phoneMethods': {
-        'type': 'list',
-        'allowed': [
-            'sms',
-            'phone'
-        ],
-        'dependencies': [
-            'phone'
-        ]
     },
     'requestExpiry': {
         'type': 'datetime',
