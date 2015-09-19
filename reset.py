@@ -26,7 +26,7 @@ with app.test_request_context():
         resp = post_internal('locations', {
             'location': {
                 'type': 'Point',
-                'coordinates': [0.0, 0.0]
+                'coordinates': [-79.302587, 43.869441]
             }
         })
 
@@ -75,7 +75,6 @@ with app.test_request_context():
             })
 
 
-            print(resp)
             if resp[3] == 201:
                 import models.requests as requests
                 request = requests.Request.fromObjectId(
@@ -83,6 +82,7 @@ with app.test_request_context():
                     resp[0]['_id']
                 )
 
+                # fill in the blanks and generate public invite
                 request.set('createdBy', user.getId()).commit()
                 request.getOwner().stashPoints(request.getPoints()).commit()
 
