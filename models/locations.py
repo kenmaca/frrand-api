@@ -81,7 +81,7 @@ class Location(orm.MongoORM):
         '''
 
         # prepare this Location just in case
-        self.approximate(accuracy)
+        self.approximate(accuracy).commit()
         if not self.exists('dayOfWeek') or not self.exists('hour'):
             self.supplementCurrentTime()
 
@@ -112,8 +112,17 @@ class Location(orm.MongoORM):
             timesReported = 0
             if lastReportedLocations:
                 for lastReported in lastReportedLocations:
-                    if lastReported['location'] == self.get('location'):
-                        timesReported += lastReported['timesReported']
+
+                    # approximate the last location (since the last one
+                    # is actually this one, but not approximated)
+                    lastReported = Location(
+                        self.db,
+                        Location.collection,
+                        **lastReported
+                    )
+
+                    if lastReported.get('location') == self.get('location'):
+                        timesReported += lastReported.get('timesReported')
                     else:
 
                         # exit prematurely if the chain is broken
@@ -134,7 +143,11 @@ class Location(orm.MongoORM):
                 # merge timesReported with this location and remove older doc
                 if locationsToMerge:
                     for merge in locationsToMerge:
-                        merge = Location(self.source, **merge)
+                        merge = Location(
+                            self.db,
+                            Location.collection,
+                            **merge
+                        )
                         self.increment(
                             'timesReported',
                             merge.get('timesReported')

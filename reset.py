@@ -90,3 +90,5 @@ with app.test_request_context():
                 requestsRoute._addDefaultDestination(request)
                 requestsRoute._refreshInvites(request)
                 request.commit()
+
+                print('API Successfully Reset!')

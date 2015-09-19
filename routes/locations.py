@@ -122,5 +122,5 @@ def _convertToAddress(location):
                 app.data.driver.db,
                 location.get('createdBy')
             ).message(
-                *messages.locations.created()
+                *messages.locations.created(address.getId())
             )
