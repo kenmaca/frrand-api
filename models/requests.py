@@ -102,7 +102,10 @@ class Request(orm.MongoORM):
                 candidate.get('active')
                 and candidate.getId() != self.get('createdBy')
             ):
-                self.push('candidates', candidate['_id'])
+                try:
+                    self.addCandidate(candidate['_id'])
+                except ValueError:
+                    pass
 
         return self
 
@@ -115,10 +118,10 @@ class Request(orm.MongoORM):
         for user in self.db['users'].find({}):
             user = users.User(self.db, users.User.collection, **user)
             if user.isActive():
-                self.push('candidates', user.getId())
-
-        # now remove duplicates
-        self.set('candidates', list(set(self.get('candidates'))))
+                try:
+                    self.addCandidate(user.getId())
+                except ValueError:
+                    pass
 
         return self
 
@@ -130,10 +133,10 @@ class Request(orm.MongoORM):
         import models.users as users
         user = users.User.fromObjectId(self.db, self.get('createdBy'))
         if user.isActive():
-            self.push('candidates', user.getId())
-
-        # now remove duplicates
-        self.set('candidates', list(set(self.get('candidates'))))
+            try:
+                self.addCandidate(user.getId())
+            except ValueError:
+                pass
 
         return self
 
@@ -273,6 +276,27 @@ class Request(orm.MongoORM):
             .commit()
         )
 
+        return self
+
+    def addCandidate(self, userId):
+        ''' (Request, ObjectId) -> Request
+        Adds the userId to this Request's candidates list.
+        '''
+
+        # prevent adding users that already have an Invite or
+        # already in candidates list
+        if (
+            (
+                userId
+                in [invite.getOwner().getId() for invite in self.getInvites()]
+            ) or (
+                userId in self.get('candidates')
+            )
+        ):
+            raise ValueError('Candidate already exists or has an invite')
+
+        # otherwise, good to go            
+        self.push('candidates', userId)
         return self
 
     def isAttached(self):

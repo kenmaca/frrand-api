@@ -127,17 +127,14 @@ def _createAcceptedInvite(publicInvite):
     '''
 
     try:
-        import models.requests as requests
-        request = requests.Request.findOne(
-            app.data.driver.db,
-            _id=publicInvite.get('requestId'),
-            publicRequestInviteId=publicInvite.getId()
-        )
-
         if publicInvite.get('acceptedBy'):
+            request = publicInvite.getRequest()
 
             # adding candidate to prep generation of invite
-            request.push('candidates', publicInvite.get('acceptedBy')).commit()
+            try:
+                request.addCandidate(publicInvite.get('acceptedBy')).commit()
+            except ValueError:
+                errors.publicRequestInvites.abortDuplicateCandidate()
 
             # generate invites
             import routes.requests as requestsRoute
@@ -145,10 +142,14 @@ def _createAcceptedInvite(publicInvite):
     
             # set accepted on the newly generated invite
             import models.requestInvites as requestInvites
-            requestInvites.Invite.findOne(
-                app.data.driver.db,
-                requestId=request.getId()
-            ).accept().commit()
+            try:
+                requestInvites.Invite.findOne(
+                    app.data.driver.db,
+                    requestId=request.getId(),
+                    createdBy=publicInvite.get('acceptedBy')
+                ).accept().commit()
+            except KeyError:
+                pass
 
             # finally, allow others to accept this PublicInvite too
             publicInvite.set('acceptedBy', None).commit()
