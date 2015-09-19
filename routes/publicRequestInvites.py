@@ -17,6 +17,10 @@ schema = {
             'field': '_id'
         },
         'default': None
+    },
+    'location': {
+        'type': 'point',
+        'readonly': True
     }
 }
 
@@ -27,6 +31,10 @@ config = {
     'allowed_filters': [],
     'resource_methods': ['GET', 'POST'],
     'item_methods': ['GET', 'PATCH'],
+    'mongo_indexes': {
+        '_id_': [('_id', 1)],
+        'location_2dsphere': [('location', '2dsphere')]
+    },
     'schema': schema,
     'auth_field': None
 }
@@ -39,6 +47,26 @@ def init(app):
     app.on_update_publicRequestInvites += onUpdate
     app.on_fetched_item_publicRequestInvites += onFetchedItem
     app.on_fetched_resource_publicRequestInvites += onFetched
+    app.on_pre_GET_publicRequestInvites += onPreGet
+
+# on_pre_GET_publicRequestInvites
+def onPreGet(request, lookup):
+    ''' (dict) -> NoneType
+    An Eve hook used before a GET request.
+    '''
+
+    # if resource level GET, then sort and filter by proximity
+    if '_id' not in lookup:
+        import models.users as users
+
+        # add proximity sorting
+        lookup['location'] = {
+            '$near': {
+                '$geometry': users.getCurrentUser(
+                    app.data.driver.db
+                ).getLastLocation().getGeo(),
+            }
+        }
 
 # on_fetched_item_publicRequestInvites
 def onFetchedItem(publicInvite):
@@ -55,6 +83,10 @@ def onFetchedItem(publicInvite):
             **publicInvite
         ).embedView()
     )
+
+    # remove redundant location data (used for internal sorting)
+    if 'location' in publicInvite:
+        del publicInvite['location']
 
 # on_fetched_resource_publicRequestInvites
 def onFetched(publicInvites):

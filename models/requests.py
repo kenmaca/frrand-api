@@ -337,6 +337,17 @@ class Request(orm.MongoORM):
             self.get('createdBy')
         )
 
+    def getDestination(self):
+        ''' (Request) -> models.addresses.Address
+        Gets the destination for this Request.
+        '''
+
+        import models.addresses as addresses
+        return addresses.Address.fromObjectId(
+            self.db,
+            self.get('destination')
+        )
+
     def getPoints(self):
         ''' (Request) -> int
         Gets the number of points this Request awards on completion.

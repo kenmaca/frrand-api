@@ -298,3 +298,21 @@ class User(orm.MongoORM):
             # doesn't exist, good to go
             except KeyError:
                 return username
+
+# helpers
+
+def getCurrentUser(db):
+    ''' (pymongo.database.Database) -> User
+    Gets the User currently logged in.
+    '''
+
+    from flask import g
+    userId = g.get('auth_value')
+    if userId:
+        try:
+            return User.fromObjectId(
+                db,
+                userId
+            )
+        except KeyError:
+            return

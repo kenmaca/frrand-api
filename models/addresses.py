@@ -43,6 +43,13 @@ class Address(orm.MongoORM):
 
         return self
 
+    def getGeo(self):
+        ''' (Address) -> dict
+        Gets a GeoJson representation of this Address.
+        '''
+
+        return self.get('location')
+
     def changeAddress(self, address, eps):
         ''' (Address, str, float) -> Address
         Changes the address for this Address.

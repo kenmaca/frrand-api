@@ -416,8 +416,20 @@ def _refreshInvites(request):
                 )
 
                 if resp[3] == 201:
+                    import models.publicRequestInvites as publicInvites
+
                     request.set(
                         'publicRequestInviteId', resp[0]['_id']
+                    ).commit()
+
+                    public = publicInvites.PublicInvite.fromObjectId(
+                        app.data.driver.db,
+                        resp[0]['_id']
+                    )
+
+                    public.set(
+                        'location',
+                        public.getRequest().getDestination().getGeo()
                     ).commit()
 
 def _removeInvites(request):

@@ -34,6 +34,13 @@ class Location(orm.MongoORM):
         self.set('current', True)
         return self
 
+    def getGeo(self):
+        ''' (Location) -> dict
+        Gets a GeoJson representation of this Location.
+        '''
+
+        return self.get('location')
+
     def supplementCurrentTime(self):
         ''' (Location) -> Location
         Adds dayOfWeek and hour to this location.
