@@ -45,7 +45,7 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
-    app.on_update_publicRequestInvites += onUpdate
+    app.on_updated_publicRequestInvites += onUpdated
     app.on_fetched_item_publicRequestInvites += onFetchedItem
     app.on_fetched_resource_publicRequestInvites += onFetched
     app.on_pre_GET_publicRequestInvites += onPreGet
@@ -104,10 +104,10 @@ def onFetched(publicInvites):
         for publicInvite in publicInvites['_items']:
             onFetchedItem(publicInvite)
 
-# on_update_publicRequestInvites
-def onUpdate(changes, publicInvite):
+# on_updated_publicRequestInvites
+def onUpdated(changes, publicInvite):
     ''' (dict, dict) -> NoneType
-    An Eve hook used prior to a publicRequestInvite is updated.
+    An Eve hook used after a publicRequestInvite is updated.
     '''
 
     if 'acceptedBy' in changes:
