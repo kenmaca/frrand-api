@@ -1,5 +1,6 @@
 from flask import current_app as app
 import errors.publicRequestInvites
+from pymongo import DESCENDING
 
 schema = {
     'requestId': {
@@ -59,14 +60,19 @@ def onPreGet(request, lookup):
     if '_id' not in lookup:
         import models.users as users
 
-        # add proximity sorting
-        lookup['location'] = {
-            '$near': {
-                '$geometry': users.getCurrentUser(
-                    app.data.driver.db
-                ).getLastLocation().getGeo(),
+        # add proximity sorting if location exists
+        try:
+            lookup['location'] = {
+                '$near': {
+                    '$geometry': users.getCurrentUser(
+                        app.data.driver.db
+                    ).getLastLocation().getGeo(),
+                }
             }
-        }
+
+        # otherwise, just sort by time
+        except AttributeError:
+            lookup['$orderby'] = {'_created': DESCENDING}
 
 # on_fetched_item_publicRequestInvites
 def onFetchedItem(publicInvite):
