@@ -78,7 +78,7 @@ class User(orm.MongoORM):
 
         # sends to all known devices for dev use
         else:
-            return [
+            return any([
                 gcm.gcmSend(
                     apiKey.get('deviceId'),
                     {
@@ -86,7 +86,7 @@ class User(orm.MongoORM):
                         messageType: message
                     }
                 ) for apiKey in self.getApiKeys()
-            ]
+            ])
 
     def sms(self, message):
         ''' (User, str) -> bool

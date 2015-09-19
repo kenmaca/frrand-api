@@ -10,20 +10,21 @@ def gcmSend(deviceId, data, ttl=0):
     if it worked.
     '''
 
-    try:
-        # sanitize payload first for non-serializable objects
-        gcmSafe(data)
+    if deviceId:
+        try:
+            # sanitize payload first for non-serializable objects
+            gcmSafe(data)
 
-        gcmResult = GCM(GCM_API_KEY).json_request(
-            registration_ids=[deviceId], data=data, time_to_live=ttl
-        )
+            gcmResult = GCM(GCM_API_KEY).json_request(
+                registration_ids=[deviceId], data=data, time_to_live=ttl
+            )
 
-        if 'errors' in gcmResult:
+            if 'errors' in gcmResult:
+                return False
+            return True
+
+        except Exception as e:
             return False
-        return True
-
-    except Exception as e:
-        return False
 
 def gcmSafe(sourceDict):
     ''' (dict) -> NoneType
