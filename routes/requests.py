@@ -285,12 +285,12 @@ def onInserted(insertedRequests):
                 **request
             )
 
-            # keep aside points for awarding
-            request.getOwner().stashPoints(request.getPoints()).commit()
-    
             _addDefaultDestination(request)
             request.matchAllCandidates()
             _refreshInvites(request)
+
+            # keep aside points for awarding
+            request.getOwner().stashPoints(request.getPoints()).commit()
             request.commit()
 
 # helpers

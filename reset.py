@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3.4
 from run import app
 from eve.methods.post import post_internal
+from datetime import datetime
 with app.test_request_context():
 
     # drop collections
@@ -91,4 +92,4 @@ with app.test_request_context():
                 requestsRoute._refreshInvites(request)
                 request.commit()
 
-                print('API Successfully Reset!')
+                print('API was reset at %s' % datetime.now())
