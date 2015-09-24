@@ -82,6 +82,12 @@ schema = {
     'deviceId': {
         'type': 'string',
         'required': True
+    },
+    'facebookAccessToken': {
+        'type': 'string'
+    },
+    'googleAccessToken': {
+        'type': 'string'
     }
 }
 
@@ -97,7 +103,9 @@ config = {
         'projection': {
             'password': 0,
             'salt': 0,
-            'deviceId': 0
+            'deviceId': 0,
+            'facebookAccessToken': 0,
+            'googleAccessToken': 0
         }
     },
     'allowed_filters': [],
@@ -183,3 +191,9 @@ def onUpdated(changes, original):
     # if username has been changed
     if 'username' in changes:
         user.setUsername(changes['username']).commit()
+
+    # if adding Facebook credentials
+    # TODO: validate access
+
+    # if adding Google credentials
+    # TODO: validate access
