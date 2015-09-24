@@ -228,8 +228,14 @@ class Request(orm.MongoORM):
 
             # remove all other invites and candidates
             self.set('candidates', [])
+            import models.requestInvites as requestInvites
             [
-                self.removeInvite(otherInvite)
+                self.removeInvite(
+                    requestInvites.Invites.fromObjectId(
+                        self.db,
+                        otherInvite
+                    )
+                )
                 for otherInvite in self.get('inviteIds')
                 if otherInvite != invite.getId()
             ]

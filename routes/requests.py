@@ -197,13 +197,8 @@ def onUpdate(updated, original):
             errors.requests.abortAlreadyAttached()
         else:
             try:
-                import models.requestInvites as requestInvites
-                invite = requestInvites.Invite.fromObjectId(
-                    app.data.driver.db,
-                    request.getAttached()
-                )
-
-                request.attachInvite(invite)
+                invite = request.getAttached()
+                request.attachInvite(invite).commit()
                 invite.commit()
             except ValueError:
                 errors.requests.abortAttachInvite()
