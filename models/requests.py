@@ -231,7 +231,7 @@ class Request(orm.MongoORM):
             import models.requestInvites as requestInvites
             [
                 self.removeInvite(
-                    requestInvites.Invites.fromObjectId(
+                    requestInvites.Invite.fromObjectId(
                         self.db,
                         otherInvite
                     )
