@@ -1,5 +1,6 @@
 from eve.auth import TokenAuth, BasicAuth
 from flask import current_app as app
+from facebook import GraphAPI, GraphAPIError
 
 # default authentication method
 class APIAuth(TokenAuth):
@@ -52,8 +53,8 @@ class APIAuth(TokenAuth):
 
 # generate apiKey user:pass authentication method
 class UserAuth(BasicAuth):
-    ''' An authentication method using an username and password to
-    generally used to generate an apiKey.
+    ''' An authentication method using an username and password. Generally 
+    used to generate an apiKey.
     '''
 
     def check_auth(self, username, password, allowed_roles, resource, method):
@@ -63,19 +64,41 @@ class UserAuth(BasicAuth):
         '''
 
         try:
-            import models.users as users
-            user = users.User.findOne(
-                app.data.driver.db,
-                username=username
-            )
 
-            # set creation of apiKey to this user
-            self.set_request_auth_value(user.getId())
+            # special facebook login method with access tokens
+            if username == '_facebook':
+                fb = GraphAPI(token, '2.2')
+                import models.users as users
+                user = users.User.findOne(
+                    app.data.driver.db,
+                    facebookId=fb.get_object('me')['id']
+                )
 
-            # and test password
-            return user.authenticate(password)
+                # set creation of apiKey to this user
+                self.set_request_auth_value(user.getId())
 
-        except KeyError:
+                # TODO: update fields if needed here from fb profile
+                return user
+
+            # special google login method with access tokens
+            if username == '_google':
+                pass
+
+            # otherwise, fall back to standard user/pass auth
+            else:
+                import models.users as users
+                user = users.User.findOne(
+                    app.data.driver.db,
+                    username=username
+                )
+
+                # set creation of apiKey to this user
+                self.set_request_auth_value(user.getId())
+
+                # and test password
+                return user.authenticate(password)
+
+        except (GraphAPIError, KeyError):
             pass
 
 # deny all (http) requests

@@ -1,4 +1,8 @@
 from flask import current_app as app
+from facebook import GraphAPI, GraphAPIError
+import errors.users
+
+RESERVED_USERNAMES=['facebook', 'google']
 
 schema = {
     'username': {
@@ -20,6 +24,15 @@ schema = {
     'active': {
         'type': 'boolean',
         'default': True
+    },
+    'firstName': {
+        'type': 'string'
+    },
+    'lastName': {
+        'type': 'string'
+    },
+    'isMale': {
+        'type': 'boolean'
     },
     'requestsRecieved': {
         'type': 'integer',
@@ -86,8 +99,16 @@ schema = {
     'facebookAccessToken': {
         'type': 'string'
     },
+    'facebookId': {
+        'type': 'string',
+        'readonly': True
+    },
     'googleAccessToken': {
         'type': 'string'
+    },
+    'googleId': {
+        'type': 'string',
+        'readonly': True
     }
 }
 
@@ -135,11 +156,19 @@ def onInsert(insertUsers):
     import models.users as users
     for user in insertUsers:
 
+        # prevent reserved usernames
+        if 'username' in user and user['username'] in RESERVED_USERNAMES:
+            errors.users.abortUsernameReserved()
+
         # generate username if it wasn't specified
-        if 'username' not in user:
+        else:
             user['username'] = users.User.generateUsername(
                 app.data.driver.db
             )
+
+        # validate facebook access token
+        if 'facebookAccessToken' in user:
+            _getFacebook(user['facebookAccessToken'], user)
 
 # on_inserted_users
 def onInserted(insertedUsers):
@@ -168,6 +197,20 @@ def onInserted(insertedUsers):
 
         user.commit()
 
+# on_update_users
+def onUpdate(changes, original):
+    ''' (dict, dict) -> NoneType
+    An Eve hook used before update.
+    '''
+
+    # prevent usage of reserved names
+    if 'username' in changes and changes['username'] in RESERVED_USERNAMES:
+        errors.users.abortUsernameReserved()
+
+    # validate facebook access token
+    if 'facebookAccessToken' in changes:
+        _getFacebook(changes['facebookAccessToken'], changes)
+
 # on_updated_users
 def onUpdated(changes, original):
     ''' (dict, dict) -> NoneType
@@ -192,8 +235,26 @@ def onUpdated(changes, original):
     if 'username' in changes:
         user.setUsername(changes['username']).commit()
 
-    # if adding Facebook credentials
-    # TODO: validate access
+# helpers
+def _getFacebook(accessToken, user):
+    ''' (str, dict) -> (str, str, str, str)
+    Gets the id, first_name, last_name, and gender for the Facebook user
+    associated with accessToken, respectively. Also mutates the provided user
+    dict with these values obtained.
+    '''
 
-    # if adding Google credentials
-    # TODO: validate access
+    try:
+        fb = GraphAPI(accessToken, '2.2').get_object(
+            'me?fields=first_name,last_name,gender'
+        )
+
+        # mutate the dict for insertion/update
+        user['facebookId'] = fb['id']
+        user['firstName'] = fb['first_name']
+        user['lastName'] = fb['last_name']
+        user['gender'] = fb['gender'] == 'male'
+
+        return (fb['id'], fb['first_name'], fb['last_name'], fb['gender'])
+
+    except GraphAPIError:
+        errors.users.abortFacebookInvalidToken()
