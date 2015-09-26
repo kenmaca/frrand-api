@@ -126,11 +126,21 @@ config = {
     },
     'datasource': {
         'projection': {
-            'password': 0,
-            'salt': 0,
-            'deviceId': 0,
-            'facebookAccessToken': 0,
-            'googleAccessToken': 0
+            'active': 1,
+            'requestsReceived': 1,
+            'phone': 1,
+            'phoneVerified': 1,
+            'lastName': 1,
+            'username': 1,
+            'numberOfRatings': 1,
+            'requestsDelivered': 1,
+            'firstName': 1,
+            'rating': 1,
+            'points': 1,
+            'phoneMethods': 1,
+            'picture': 1,
+            'isMale': 1,
+            'pendingPoints': 1
         }
     },
     'allowed_filters': [],

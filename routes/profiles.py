@@ -7,15 +7,20 @@ config = {
     'datasource': {
         'source': 'users',
         'projection': {
-            'password': 0,
-            'salt': 0,
-            'deviceId': 0,
-            'phone': 0,
-            'phoneMethods': 0,
-            'phoneVerified': 0,
-            'pendingPoints': 0,
-            'createdBy': 0,
-            '_verificationCode': 0
+            'active': 1,
+            'requestsReceived': 1,
+            'phone': 1,
+            'phoneVerified': 1,
+            'lastName': 1,
+            'username': 1,
+            'numberOfRatings': 1,
+            'requestsDelivered': 1,
+            'firstName': 1,
+            'rating': 1,
+            'points': 1,
+            'phoneMethods': 1,
+            'picture': 1,
+            'isMale': 1
         }
     },
     'allowed_filters': [],
