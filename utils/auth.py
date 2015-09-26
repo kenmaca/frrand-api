@@ -67,7 +67,7 @@ class UserAuth(BasicAuth):
 
             # special facebook login method with access tokens
             if username == '_facebook':
-                fb = GraphAPI(token, '2.2')
+                fb = GraphAPI(token, version='2.2')
                 import models.users as users
                 user = users.User.findOne(
                     app.data.driver.db,

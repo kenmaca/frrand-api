@@ -2,7 +2,7 @@ from flask import current_app as app
 from facebook import GraphAPI, GraphAPIError
 import errors.users
 
-RESERVED_USERNAMES=['facebook', 'google']
+RESERVED_USERNAMES = ['facebook', 'google']
 
 schema = {
     'username': {
@@ -144,6 +144,7 @@ def init(app):
     app.on_insert_users += onInsert
     app.on_inserted_users += onInserted
     app.on_updated_users += onUpdated
+    app.on_update_users += onUpdate
 
 # hooks
 
@@ -231,10 +232,6 @@ def onUpdated(changes, original):
     if 'verificationCode' in changes:
         user.verifyPhone().commit()
 
-    # if username has been changed
-    if 'username' in changes:
-        user.setUsername(changes['username']).commit()
-
 # helpers
 def _getFacebook(accessToken, user):
     ''' (str, dict) -> (str, str, str, str)
@@ -244,7 +241,7 @@ def _getFacebook(accessToken, user):
     '''
 
     try:
-        fb = GraphAPI(accessToken, '2.2').get_object(
+        fb = GraphAPI(accessToken, version='2.2').get_object(
             'me?fields=first_name,last_name,gender'
         )
 
@@ -252,7 +249,7 @@ def _getFacebook(accessToken, user):
         user['facebookId'] = fb['id']
         user['firstName'] = fb['first_name']
         user['lastName'] = fb['last_name']
-        user['gender'] = fb['gender'] == 'male'
+        user['isMale'] = fb['gender'] == 'male'
 
         return (fb['id'], fb['first_name'], fb['last_name'], fb['gender'])
 
