@@ -44,7 +44,7 @@ schema = {
     'points': {
         'type': 'integer',
         'readonly': True,
-        'default': 1
+        'default': 1000
     },
     'pendingPoints': {
         'type': 'integer',
