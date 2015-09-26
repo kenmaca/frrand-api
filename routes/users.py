@@ -1,5 +1,6 @@
 from flask import current_app as app
 from facebook import GraphAPI, GraphAPIError
+from eve.io.mongo.media import GridFSMediaStorage
 import errors.users
 
 RESERVED_USERNAMES = ['facebook', 'google']
@@ -33,6 +34,9 @@ schema = {
     },
     'isMale': {
         'type': 'boolean'
+    },
+    'picture': {
+        'type': 'media'
     },
     'requestsRecieved': {
         'type': 'integer',
@@ -233,7 +237,7 @@ def onUpdated(changes, original):
         user.verifyPhone().commit()
 
 # helpers
-def _getFacebook(accessToken, user):
+def _getFacebook(accessToken, userDict):
     ''' (str, dict) -> (str, str, str, str)
     Gets the id, first_name, last_name, and gender for the Facebook user
     associated with accessToken, respectively. Also mutates the provided user
@@ -241,17 +245,41 @@ def _getFacebook(accessToken, user):
     '''
 
     try:
-        fb = GraphAPI(accessToken, version='2.2').get_object(
+        fb = GraphAPI(accessToken, version='2.2')
+        user = fb.get_object(
             'me?fields=first_name,last_name,gender'
         )
 
         # mutate the dict for insertion/update
-        user['facebookId'] = fb['id']
-        user['firstName'] = fb['first_name']
-        user['lastName'] = fb['last_name']
-        user['isMale'] = fb['gender'] == 'male'
+        userDict['facebookId'] = user['id']
+        userDict['firstName'] = user['first_name']
+        userDict['lastName'] = user['last_name']
+        userDict['isMale'] = user['gender'] == 'male'
 
-        return (fb['id'], fb['first_name'], fb['last_name'], fb['gender'])
+        # store photo locally (allow failure if image doesn't exist)
+        try:
+            picture = fb.get_object(
+                'me/picture?type=large'
+            )
+
+            # hacky disable eve gridfs validation
+            GridFSMediaStorage.validate = lambda x: 1
+
+            # now store it
+            userDict['picture'] = GridFSMediaStorage(app).put(
+                picture['data'],
+                content_type=picture['mime-type']
+            )
+
+        except GraphAPIError:
+            pass
+
+        return (
+            user['id'],
+            user['first_name'],
+            user['last_name'],
+            user['gender']
+        )
 
     except GraphAPIError:
         errors.users.abortFacebookInvalidToken()
