@@ -130,8 +130,6 @@ def _uniquePermanent(address):
     Prevent duplicate permanent addresses (based on coordinates).
     '''
 
-    # this functionality can be replaced with unique_to_user from Eve
-    # in v0.6
     existing = app.data.driver.db['addresses'].find_one({
         'createdBy': address['createdBy'],
         'location': address['location'],
