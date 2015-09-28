@@ -40,3 +40,4 @@ def init(app):
     routes.publicRequestInvites.init(app)
     routes.feedback.init(app)
     routes.comments.init(app)
+    routes.profiles.init(app)

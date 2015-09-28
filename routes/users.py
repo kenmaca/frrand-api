@@ -1,6 +1,5 @@
 from flask import current_app as app
 from facebook import GraphAPI, GraphAPIError
-from eve.io.mongo.media import GridFSMediaStorage
 import errors.users
 
 RESERVED_USERNAMES = ['facebook', 'google']
@@ -272,11 +271,8 @@ def _getFacebook(accessToken, userDict):
                 'me/picture?type=large'
             )
 
-            # hacky disable eve gridfs validation
-            GridFSMediaStorage.validate = lambda x: 1
-
             # now store it
-            userDict['picture'] = GridFSMediaStorage(app).put(
+            userDict['picture'] = app.media.put(
                 picture['data'],
                 content_type=picture['mime-type']
             )
