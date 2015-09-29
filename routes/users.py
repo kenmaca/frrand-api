@@ -253,6 +253,18 @@ def _getFacebook(accessToken, userDict):
         userDict['lastName'] = user['last_name']
         userDict['isMale'] = user['gender'] == 'male'
 
+        # prevent duplicate association
+        try:
+            import models.users as users
+            users.User.findOne(
+                app.data.driver.db,
+                facebookId=userDict['facebookId']
+            )
+
+            # exit since we found something
+            errors.users.abortFacebookDuplicateAccount()
+        except KeyError: pass
+
         # store photo locally (allow failure if image doesn't exist)
         try:
             picture = fb.get_object(
