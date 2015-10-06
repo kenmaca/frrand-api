@@ -56,11 +56,6 @@ class Address(orm.MongoORM):
         '''
 
         geo = GoogleV3().geocode(address)
-        print(geo.longitude)
-        print(self.get('location')['coordinates'][0])
-        print(geo.latitude)
-        print(self.get('location')['coordinates'][1])
-
         if (
             (
                 abs(geo.longitude - self.get('location')['coordinates'][0]) 
