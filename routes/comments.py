@@ -20,8 +20,8 @@ schema = {
     },
     'comment': {
         'type': 'string',
-        'minLength': 1,
-        'maxLength': 240,
+        'minlength': 1,
+        'maxlength': 240,
         'required': True
     }
 }
