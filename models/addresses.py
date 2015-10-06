@@ -59,10 +59,10 @@ class Address(orm.MongoORM):
         if not (
             (
                 abs(geo.longitude - self.get('location')['coordinates'][0]) 
-                < eps
+                <= eps
             ) and (
                 abs(geo.latitude - self.get('location')['coordinates'][1])
-                < eps
+                <= eps
             )
         ):
             self.set('address', address)
