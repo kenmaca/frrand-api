@@ -133,7 +133,7 @@ config = {
     'allowed_filters': [],
     'extra_response_fields': ['username'],
     'item_methods': ['GET', 'PATCH', 'DELETE'],
-    'resource_methods': ['GET', 'POST'],
+    'resource_methods': ['POST'],
     'schema': schema
 }
 
