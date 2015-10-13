@@ -76,13 +76,40 @@ class UserAuth(BasicAuth):
 
                 # set creation of apiKey to this user
                 self.set_request_auth_value(user.getId())
-
-                # TODO: update fields if needed here from fb profile
                 return user
 
             # special google login method with access tokens
-            if username == '_google':
+            elif username == '_google':
                 pass
+
+            # special phone login method with verification code
+            elif username[:6] == '_phone':
+
+                # strip type indicator
+                username = username[6:]
+                import models.users as users
+                user = users.User.findOne(
+                    app.data.driver.db,
+                    phone=username
+                )
+
+                # authenticate via verificiationCode
+                if user.get('_verificationCode') == password:
+
+                    # also serves as an verification method
+                    user.set(
+                        'verificationCode',
+                        password
+                    ).verifyPhone().commit()
+
+                    # set creation of apiKey to this user
+                    self.set_request_auth_value(user.getId())
+                    return user
+
+                # reset verificationCode if wrong
+                else:
+                    user.setVerificationCode().commit()
+
 
             # otherwise, fall back to standard user/pass auth
             else:
