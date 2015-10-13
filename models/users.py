@@ -245,11 +245,10 @@ class User(orm.MongoORM):
         self.set('_verificationCode', str(random.randint(100000, 999999)))
         
         # active sending disabled until terence stops wasting my money
-
-        #self.sms(
-        #    'Your Frrand Verification Code is: %s'
-        #    % self.get('_verificationCode')
-        #)
+        self.sms(
+            'Your Frrand Verification Code is: %s'
+            % self.get('_verificationCode')
+        )
         return self
 
     def verifyPhone(self):
