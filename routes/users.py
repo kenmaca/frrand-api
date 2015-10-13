@@ -2,14 +2,17 @@ from flask import current_app as app
 from facebook import GraphAPI, GraphAPIError
 import errors.users
 
-RESERVED_USERNAMES = ['facebook', 'google']
+RESERVED_USERNAMES = ['_facebook', '_google']
 
 schema = {
     'username': {
         'type': 'string',
         'minlength': 4,
         'maxlength': 32,
-        'unique': True
+        'unique': True,
+
+        # prevent strange character prefixes (ie, _ for reserved functions)
+        'regex': '^[a-zA-Z0-9].*$'
     },
     'password': {
         'type': 'string',
