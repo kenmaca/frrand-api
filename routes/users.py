@@ -69,6 +69,7 @@ schema = {
     },
     'phone': {
         'type': 'string',
+        'unique': True,
         'required': True
     },
     'phoneMethods': {
@@ -104,6 +105,7 @@ schema = {
     },
     'facebookId': {
         'type': 'string',
+        'unique': True,
         'readonly': True
     },
     'googleAccessToken': {
@@ -111,6 +113,7 @@ schema = {
     },
     'googleId': {
         'type': 'string',
+        'unique': True,
         'readonly': True
     }
 }
