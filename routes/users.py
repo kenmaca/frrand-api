@@ -10,9 +10,6 @@ schema = {
         'minlength': 4,
         'maxlength': 32,
         'unique': True,
-
-        # prevent strange character prefixes (ie, _ for reserved functions)
-        'regex': '^[a-zA-Z0-9].*$'
     },
     'password': {
         'type': 'string',
