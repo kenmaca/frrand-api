@@ -62,12 +62,3 @@ def abortCompleteCreation():
     '''
 
     abort(422, 'Cannot set completion on Request creation')
-
-def abortDestinationUnresolvable():
-    ''' Raised when attempting to create a Request that does not contain
-    destination information and a location could not be resolved automatically
-    from last reported Locations. Generally happens for newly created Users
-    that have never reported Location.
-    '''
-    
-    abort(422, 'No location history exists')

@@ -80,21 +80,23 @@ def onInserted(insertedLocations):
     import models.locations as locations
     for location in insertedLocations:
         if 'createdBy' in location:
-            _convertToAddress(
-                locations.Location(
-                    app.data.driver.db,
-                    locations.Location.collection,
-                    **location
-                ).setCurrent()
-                .mergePrevious(STATIONARY_THRESHOLD, ACCURACY)
-                .buildTravelRegion(LIMIT_REGION)
-                .commit()
+            _generateTemporaryAddress(
+                _convertToAddress(
+                    locations.Location(
+                        app.data.driver.db,
+                        locations.Location.collection,
+                        **location
+                    ).setCurrent()
+                    .mergePrevious(STATIONARY_THRESHOLD, ACCURACY)
+                    .buildTravelRegion(LIMIT_REGION)
+                    .commit()
+                )
             )
 
 # helpers
 
 def _convertToAddress(location):
-    ''' (Location) -> NoneType
+    ''' (models.location.Location) -> models.location.Location
     Determines if the Location was reported enough to be considered a
     permanent address for the reporter.
     '''
@@ -124,3 +126,47 @@ def _convertToAddress(location):
             ).message(
                 *messages.locations.created(address.getId())
             )
+
+    return location
+
+def _generateTemporaryAddress(location):
+    ''' (models.location.Location) -> models.location.Location
+    Attempts to generate a temporary Address if there are currently
+    no permanent Addresses for the User that the location belongs to.
+    '''
+
+    if not location.getOwner().getAddresses():
+        query = {'location': location.get('location')}
+
+        # try to see if there was a temporary address for this location
+        # and inject address in if there was
+        try:
+            query['address'] = addresses.Address.findOne(
+                app.data.driver.db,
+                **{
+                    'createdBy': user.getId(),
+                    'location': location.get('location')
+                }
+            ).get('address')
+        except KeyError:
+            pass
+
+        resp = post_internal('addresses', query)
+
+        if resp[3] == 201:
+
+            # set ownership of address and temporary status
+            address = (
+                addresses.Address.fromObjectId(
+                    app.data.driver.db,
+                    resp[0]['_id']
+                ).set('createdBy', location.getOwner().getId())
+                .set('temporary', True)
+            ).commit()
+
+            # alert owner that an address was created for them
+            location.getOwner().message(
+                *messages.requests.created(address.getId())
+            )
+
+    return location

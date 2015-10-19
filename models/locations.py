@@ -204,3 +204,14 @@ class Location(orm.MongoORM):
         )
 
         return self
+
+    def getOwner(self):
+        ''' (Location) -> models.users.User
+        Gets the owner of this Location.
+        '''
+
+        import models.users as users
+        return users.User.fromObjectId(
+            self.db,
+            self.get('createdBy')
+        )

@@ -111,8 +111,7 @@ schema = {
             'resource': 'addresses',
             'field': '_id'
         },
-
-        # TODO: make mandatory when implemented on client side
+        'required': True
     },
     'complete': {
         'type': 'boolean',
@@ -285,7 +284,6 @@ def onInserted(insertedRequests):
                 **request
             )
 
-            _addDefaultDestination(request)
             request.matchAllCandidates()
             _refreshInvites(request)
 
@@ -334,78 +332,6 @@ def _generateRequestInvites(request, invitesInBatch=1):
 
                 # and finally, send gcm out
                 candidate.message(*messages.requests.newInvite(invite.getId()))
-
-def _addDefaultDestination(request):
-    ''' (models.requests.Request) -> NoneType
-    Adds the closest address known to the requester's current location
-    if destination is not specified.
-    '''
-
-    if not request.exists('destination'):
-        import models.addresses as addresses
-
-        user = request.getOwner()
-        currentLocation = user.getLastLocation()
-
-        if currentLocation:
-            try:
-                address = addresses.Address.findOne(
-                    app.data.driver.db,
-                    **{
-                        'createdBy': user.getId(),
-                        'location': {
-                            '$near' : {
-                                '$geometry': currentLocation.get('location')
-                            }
-                        },
-
-                        # never use temporary addresses (instead, keep creating
-                        # new ones)
-                        'temporary': False
-                    }
-                )
-
-            # otherwise, create a temporary address based on the user's
-            # current location
-            except KeyError:
-                query = {'location': currentLocation.get('location')}
-
-                # try to see if there was a temporary address for this location
-                # and inject address in if there was
-                try:
-                    query['address'] = addresses.Address.findOne(
-                        app.data.driver.db,
-                        **{
-                            'createdBy': user.getId(),
-                            'location': currentLocation.get('location')
-                        }
-                    ).get('address')
-                except KeyError:
-                    pass
-
-                resp = post_internal('addresses', query)
-
-                if resp[3] == 201:
-
-                    # set ownership of invite to invitee and temporary status
-                    address = (
-                        addresses.Address.fromObjectId(
-                            app.data.driver.db,
-                            resp[0]['_id']
-                        ).set('createdBy', user.getId())
-                        .set('temporary', True)
-                    ).commit()
-
-                    # alert owner that an address was created for them
-                    user.message(*messages.requests.created(address.getId()))
-
-            # finally, set destination to either closest or temp address
-            request.set('destination', address.getId())
-
-        # do not allow creation of Request if no location data at all
-        else:
-            request.remove()
-            errors.requests.abortDestinationUnresolvable()
 
 def _refreshInvites(request):
     ''' (models.requests.Request) -> NoneType
