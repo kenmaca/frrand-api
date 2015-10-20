@@ -135,6 +135,7 @@ def _generateTemporaryAddress(location):
     no permanent Addresses for the User that the location belongs to.
     '''
 
+    import models.addresses as addresses
     if not location.getOwner().getAddresses():
         query = {'location': location.get('location')}
 
@@ -144,7 +145,7 @@ def _generateTemporaryAddress(location):
             query['address'] = addresses.Address.findOne(
                 app.data.driver.db,
                 **{
-                    'createdBy': user.getId(),
+                    'createdBy': location.getOwner().getId(),
                     'location': location.get('location')
                 }
             ).get('address')
