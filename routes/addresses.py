@@ -41,7 +41,7 @@ config = {
     'item_title': 'address',
     'public_methods': [],
     'public_item_methods': [],
-    'allowed_filters': [],
+    'allowed_filters': ['temporary'],
     'item_methods': ['GET', 'PATCH'],
     'resource_methods': ['GET', 'POST'],
     'mongo_indexes': {
