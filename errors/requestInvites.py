@@ -31,7 +31,7 @@ def abortImmutableFeedback():
     after submission).
     '''
 
-    error.requests.abortImmutableFeedback()
+    errors.requests.abortImmutableFeedback()
 
 def abortDeleteAttached():
     ''' Raised when attempting to delete an attached Invite.
