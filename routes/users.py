@@ -100,6 +100,14 @@ schema = {
         'type': 'string',
         'required': True
     },
+    'deviceType': {
+        'type': 'string',
+        'default': 'android',
+        'allowed': [
+            'android',
+            'ios'
+        ]
+    },
     'facebookAccessToken': {
         'type': 'string'
     },
