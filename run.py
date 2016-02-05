@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.4
+#!/usr/bin/python3
 
 from eve import Eve
 from eve_docs import eve_docs
@@ -17,4 +17,4 @@ app.register_blueprint(eve_docs, url_prefix='/docs')
 if __name__ == '__main__':
 
     # run
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=80)
