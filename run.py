@@ -5,6 +5,9 @@ from eve_docs import eve_docs
 from flask_bootstrap import Bootstrap
 from utils.auth import APIAuth
 from settings import init
+from tornado.wsgi import WSGIContainer
+from tornado.httpserver import HTTPServer
+from tornado.ioloop import IOLoop
 
 # start eve
 app = Eve(auth=APIAuth())
@@ -17,4 +20,6 @@ app.register_blueprint(eve_docs, url_prefix='/docs')
 if __name__ == '__main__':
 
     # run
-    app.run(host='0.0.0.0', port=80)
+    server = HTTPServer(WSGIContainer(app))
+    server.listen(80)
+    IOLoop.instance().start()
