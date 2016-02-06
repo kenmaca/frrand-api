@@ -219,6 +219,17 @@ def onUpdate(updated, original):
     if 'rating' in updated or 'comment' in updated:
         if not request.isComplete():
             errors.requests.abortFeedbackUncompleted()
+
+        # allow owner to update feedback comment if it wasn't left before
+        elif (
+            originalRequest.feedbackSubmitted()
+            and 'comment' in updated
+            and not originalRequest.getFeedback().get('comment')
+        ):
+            originalRequest.getFeedback().set(
+                'comment',
+                updated['comment']
+            ).commit()
         elif originalRequest.feedbackSubmitted():
             errors.requests.abortImmutableFeedback()
         else:

@@ -384,3 +384,18 @@ class Request(orm.MongoORM):
         '''
 
         return self.get('points')
+
+    def getFeedback(self):
+        ''' (Request) -> Feedback
+        Gets the Feedback, if any, left for the deliverer.
+        '''
+
+        if self.feedbackSubmitted():
+            import models.feedback as feedback
+            return feedback.Feedback.findOne(
+                self.db,
+                **{
+                    'requestId': self.getId(),
+                    'for': self.getAttached().getOwner().getId()
+                }
+            )

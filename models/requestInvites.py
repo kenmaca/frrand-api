@@ -147,3 +147,18 @@ class Invite(orm.MongoORM):
         '''
 
         return self.exists('rating') and bool(self.get('rating'))
+
+    def getFeedback(self):
+        ''' (Request) -> Feedback
+        Gets the Feedback, if any, left for the requester.
+        '''
+
+        if self.feedbackSubmitted():
+            import models.feedback as feedback
+            return feedback.Feedback.findOne(
+                self.db,
+                **{
+                    'requestInviteId': self.getId(),
+                    'for': self.getRequest().getOwner().getId()
+                }
+            )

@@ -158,7 +158,13 @@ def onUpdate(changes, invite):
     elif 'rating' in changes or 'comment' in changes:
         if not requestInvite.isComplete():
             errors.requestInvites.abortFeedBackUncompleted()
-        elif requestInvite.feedbackSubmitted():
+        elif (
+            requestInvite.feedbackSubmitted()
+            and requestInvite.getRequest().get('comment')
+        ) or (
+            requestInvite.feedbackSubmitted()
+            and 'rating' in changes
+        ):
             errors.requestInvites.abortImmutableFeedback()
 
 # on_updated_requestInvites
@@ -180,13 +186,24 @@ def onUpdated(changes, invite):
     # post feedback from invitee
     if 'rating' in changes or 'comment' in changes:
 
-        # create publicly viewable feedback
-        import models.feedback as feedback
-        feedback.Feedback.new(
-            app.data.driver.db,
-            requestInvite.getRequest(),
-            False
-        )
+        # allow owner to update feedback comment if it wasn't left before
+        if (
+            requestInvite.feedbackSubmitted()
+            and 'comment' in changes
+        ):
+            requestInvite.getFeedback().set(
+                'comment',
+                changes['comment']
+            ).commit()
+        else:
+
+            # create publicly viewable feedback
+            import models.feedback as feedback
+            feedback.Feedback.new(
+                app.data.driver.db,
+                requestInvite.getRequest(),
+                False
+            )
 
 # on_delete_item_requestInvites
 def onDeleteItem(invite):
