@@ -8,8 +8,8 @@ from pymongo import DESCENDING
 
 BCRYPT_ROUNDS = 8
 BCRYPT_ENCODING = 'utf-8'
-GEN_NOUNS = '/home/api/frrand/lib/nouns'
-GEN_ADJS = '/home/api/frrand/lib/adjectives'
+GEN_NOUNS = '/home/ec2-user/frrand/lib/nouns'
+GEN_ADJS = '/home/ec2-user/frrand/lib/adjectives'
 
 class User(orm.MongoORM):
     ''' A representation of an User in Frrand.
