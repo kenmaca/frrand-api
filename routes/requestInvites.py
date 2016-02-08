@@ -160,7 +160,7 @@ def onUpdate(changes, invite):
             errors.requestInvites.abortFeedBackUncompleted()
         elif (
             requestInvite.feedbackSubmitted()
-            and requestInvite.getRequest().get('comment')
+            and requestInvite.getFeedback().get('comment')
         ) or (
             requestInvite.feedbackSubmitted()
             and 'rating' in changes
