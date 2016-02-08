@@ -160,6 +160,7 @@ def init(app):
     app.on_fetched_item_requests += onFetchedItem
     app.on_fetched_resource_requests += onFetched
     app.on_update_requests += onUpdate
+    app.on_updated_requests += onUpdated
 
 # hooks
 
@@ -218,29 +219,45 @@ def onUpdate(updated, original):
     # owner is posting feedback
     if 'rating' in updated or 'comment' in updated:
         if not request.isComplete():
-            errors.requests.abortFeedbackUncompleted()
+            errors.requests.abortFeedBackUncompleted()
 
-        # allow owner to update feedback comment if it wasn't left before
+        # refuse if comment previously exists, or if rating is being changed
         elif (
             originalRequest.feedbackSubmitted()
-            and 'comment' in updated
-            and not originalRequest.getFeedback().get('comment')
+            and originalRequest.getFeedback().get('comment')
+        ) or (
+            originalRequest.feedbackSubmitted()
+            and 'rating' in updated
         ):
-            originalRequest.getFeedback().set(
-                'comment',
-                updated['comment']
-            ).commit()
-        elif originalRequest.feedbackSubmitted():
             errors.requests.abortImmutableFeedback()
-        else:
 
-            # create publicly viewable feedback
-            import models.feedback as feedback
-            feedback.Feedback.new(
-                app.data.driver.db,
-                request,
-                True
-            )
+# on_updated_requests
+def onUpdated(changes, original):
+    ''' (dict, dict) -> NoneType
+    An Eve hook used after update.
+    '''
+
+    import models.requests as requests
+    request = requests.Request.fromObjectId(
+        app.data.driver.db,
+        original['_id']
+    )
+
+    # post feedback from requester
+    if 'rating' in changes:
+        import models.feedback as feedback
+        feedback.Feedback.new(
+            app.data.driver.db,
+            request,
+            True
+        )
+
+    # feedback exists, so just modify comment
+    elif 'comment' in changes:
+        request.getFeedback().set(
+            'comment',
+            updated['comment']
+        ).commit()
 
 # on_fetched_item_requests
 def onFetchedItem(fetchedRequest):
