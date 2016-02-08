@@ -1,18 +1,26 @@
 from eve.auth import TokenAuth, BasicAuth
 from flask import current_app as app
 from facebook import GraphAPI, GraphAPIError
+from errors.general import abortUnsupportedVersion
+
+MIN_CLIENT_VERSION = 0.0
 
 # default authentication method
-class APIAuth(TokenAuth):
+class APIAuth(BasicAuth):
     ''' An authentication method using apiKeys allowing only access
     to self-created resources.
     '''
 
-    def check_auth(self, token, allowed_roles, resource, method):
-        ''' (APIAuth, str, list, str, str) -> bool
+    def check_auth(self, version, token, allowed_roles, resource, method):
+        ''' (APIAuth, str, str, list, str, str) -> bool
         Checks if the provided token is a valid apiKey and has access
-        to the requested resource.
+        to the requested resource. Also blocks version lower than
+        MIN_CLIENT_VERSION.
         '''
+
+        # refuse connection if version is too old
+        if float(version[1:]) < MIN_CLIENT_VERSION:
+            abortUnsupportedVersion()
 
         try:
             import models.apiKeys as apiKeys
