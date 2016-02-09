@@ -3,7 +3,7 @@ from flask import current_app as app
 from facebook import GraphAPI, GraphAPIError
 from errors.general import abortUnsupportedVersion
 
-MIN_CLIENT_VERSION = 0.0
+MIN_CLIENT_VERSION = 0.01
 
 # default authentication method
 class APIAuth(BasicAuth):
