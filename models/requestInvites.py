@@ -48,6 +48,7 @@ class Invite(orm.MongoORM):
 
         return (
             not self.get('attached')
+            and not self.get('accepted')
             and (
                 self.get('requestExpiry')
                 < datetime.utcnow().replace(tzinfo=UTC)

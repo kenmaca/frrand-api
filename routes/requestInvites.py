@@ -102,6 +102,7 @@ def onFetchedItem(invite, preventDisplay=True):
 
     # prune and remove from list if expired
     else:
+        print('Invite has expired (pruned from Invite): ' + str(requestInvite.getId()))
         _removeInvite(requestInvite)
 
         # prevent display
