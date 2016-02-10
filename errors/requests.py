@@ -1,5 +1,11 @@
 from flask import abort
 
+def abortExpiredInvite():
+    ''' Raised when attempting to use an expired or nonexistent invite.
+    '''
+
+    abort(422, 'Invite does not exist or has expired.')
+
 def abortImmutablePoints():
     ''' Raised when attempting to change points awarded after a
     Request has been created.

@@ -90,10 +90,6 @@ schema = {
     },
     'attachedInviteId': {
         'type': 'objectid',
-        'data_relation': {
-            'resource': 'requestInvites',
-            'field': '_id'
-        },
         'default': None
     },
     'publicRequestInviteId': {
@@ -193,15 +189,23 @@ def onUpdate(updated, original):
 
     # owner has attached an invite
     if 'attachedInviteId' in updated:
-        if originalRequest.isAttached():
-            errors.requests.abortAlreadyAttached()
-        else:
-            try:
-                invite = request.getAttached()
-                request.attachInvite(invite).commit()
-                invite.commit()
-            except ValueError:
-                errors.requests.abortAttachInvite()
+        import models.requestInvites as invites
+        try:
+
+            # only allow attach if the invite exists
+            invites.Invite.fromObjectId(app.data.driver.db, updated['attachedInviteId'])
+
+            if originalRequest.isAttached():
+                errors.requests.abortAlreadyAttached()
+            else:
+                try:
+                    invite = request.getAttached()
+                    request.attachInvite(invite).commit()
+                    invite.commit()
+                except ValueError:
+                    errors.requests.abortAttachInvite()
+        except KeyError:
+            errors.requests.abortExpiredInvite()
 
     # owner has confirmed completion of this Request
     if 'complete' in updated:

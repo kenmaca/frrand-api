@@ -201,7 +201,6 @@ class Request(orm.MongoORM):
         '''
 
         try:
-            print('Invite pruned from Request: ' + str(invite.getId()))
             self.listRemove('inviteIds', invite.getId())            
             invite.remove()
         except ValueError:
