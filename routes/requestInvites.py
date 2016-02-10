@@ -185,20 +185,20 @@ def onUpdated(changes, invite):
     if 'accepted' in changes:
         requestInvite.accept()
 
-    # post feedback from requester
+    # post feedback from deliverer
     if 'rating' in changes:
         import models.feedback as feedback
         feedback.Feedback.new(
             app.data.driver.db,
             requestInvite.getRequest(),
-            True
+            False
         )
 
     # feedback exists, so just modify comment
     elif 'comment' in changes:
         requestInvite.getFeedback().set(
             'comment',
-            updated['comment']
+            changes['comment']
         ).commit()
 
 # on_delete_item_requestInvites
