@@ -260,7 +260,7 @@ def onUpdated(changes, original):
     elif 'comment' in changes:
         request.getFeedback().set(
             'comment',
-            updated['comment']
+            changes['comment']
         ).commit()
 
 # on_fetched_item_requests
