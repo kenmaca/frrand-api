@@ -66,6 +66,15 @@ class APIAuth(BasicAuth):
 class FacebookAuth(BasicAuth):
     ''' An authentication method using a FacebookId allowing only access
     to self-created resources.
+
+    Warning: This is a potentially insecure authentication method since
+    it requires only a publically obtainable FacebookId to login. This
+    was originally intended to be used in conjunction with authenticating with
+    a FacebookToken after Eve's built in authentication functionality during
+    the on_insert hook as a second stage.
+
+    Do not use this authentication method without the second stage authentication
+    as Facebook access could be compromised!
     '''
 
     def check_auth(self, version, token, allowed_roles, resource, method):
