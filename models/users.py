@@ -61,6 +61,44 @@ class User(orm.MongoORM):
             )
         ]
 
+    def getRequests(self, completed=False):
+        ''' (User, bool) -> list of models.requests.Request
+        Obtains a listing of Requests made by this User.
+        '''
+
+        import models.requests as requests
+        return [requests.Request(
+                self.db,
+                requests.Request.collection,
+                **request
+            ) for request in
+            self.db[requests.Request.collection].find(
+                {
+                    'createdBy': self.getId(),
+                    'complete': completed
+                }
+            )
+        ]
+
+    def getInvites(self, completed=False):
+        ''' (User, bool) -> list of models.requestInvites.Invite 
+        Obtains a listing of Invites owned by this User.
+        '''
+
+        import models.requestInvites as invites
+        return [invites.Invite(
+                self.db,
+                invites.Invite.collection,
+                **invite
+            ) for invite in
+            self.db[invites.Invite.collection].find(
+                {
+                    'createdBy': self.getId(),
+                    'complete': completed
+                }
+            )
+        ]
+
     def message(self, messageType, message, deviceId=False):
         ''' (User, str, object) -> bool
         Sends a message to the last known device via GCM, or else

@@ -113,6 +113,11 @@ schema = {
         'type': 'boolean',
         'default': False
     },
+    'pickedUp': {
+        'type': 'boolean',
+        'default': False,
+        'readonly': True
+    },
     'rating': {
         'type': 'integer',
         'min': 1,
