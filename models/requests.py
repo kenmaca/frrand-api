@@ -103,7 +103,7 @@ class Request(orm.MongoORM):
                 and candidate.getId() != self.get('createdBy')
             ):
                 try:
-                    self.addCandidate(candidate['_id'])
+                    self.addCandidate(candidate.getId())
                 except ValueError:
                     pass
 
