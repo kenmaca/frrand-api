@@ -1,4 +1,4 @@
-from flask import current_app as app
+from flask import current_app as app, g
 import errors.addresses
 
 # accuracy to allow range of addresses for given coordinates
@@ -8,7 +8,8 @@ DECIMAL_PLACES = 3
 schema = {
     'name': {
         'type': 'string',
-        'minlength': 4
+        'minlength': 1,
+        'default': 'work'
     },
     'address': {
         'type': 'string',
@@ -90,12 +91,19 @@ def onInsert(insertAddresses):
     An Eve hook used to prior to insertion.
     '''
 
+    import models.users as users
     for address in insertAddresses:
         _approximate(address)
 
         # skip if created internally
         if 'createdBy' in address:
             _uniquePermanent(address)
+
+            # set to home address if first address created
+            if not users.User.fromObjectId(
+                app.data.driver.db, address['createdBy']
+            ).getAddresses():
+                address['name'] = 'home'        
 
 # on_inserted_addresses
 def onInserted(insertedAddresses):
