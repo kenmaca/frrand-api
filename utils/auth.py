@@ -1,6 +1,5 @@
 from eve.auth import TokenAuth, BasicAuth
 from flask import current_app as app
-from facebook import GraphAPI, GraphAPIError
 from errors.general import abortUnsupportedVersion
 
 MIN_CLIENT_VERSION = 0.01
@@ -63,6 +62,28 @@ class APIAuth(BasicAuth):
         except KeyError:
             pass
 
+# generate apiKey facebookId authentication method
+class FacebookAuth(BasicAuth):
+    ''' An authentication method using a FacebookId allowing only access
+    to self-created resources.
+    '''
+
+    def check_auth(self, version, token, allowed_roles, resource, method):
+        ''' (FacebookAuth, str, str, list, str, str) -> bool
+        Checks if the provided token is a currently known FacebookId and has access
+        to the requested resource.
+        '''
+
+        import models.users as users
+        user = users.User.findOne(
+            app.data.driver.db,
+            facebookId=token
+        )
+
+        # set creation of apiKey to this user
+        self.set_request_auth_value(user.getId())
+        return user
+
 # generate apiKey user:pass authentication method
 class UserAuth(BasicAuth):
     ''' An authentication method using an username and password. Generally 
@@ -77,25 +98,8 @@ class UserAuth(BasicAuth):
 
         try:
 
-            # special facebook login method with access tokens
-            if username == '_facebook':
-                fb = GraphAPI(password, version='2.2')
-                import models.users as users
-                user = users.User.findOne(
-                    app.data.driver.db,
-                    facebookId=fb.get_object('me')['id']
-                )
-
-                # set creation of apiKey to this user
-                self.set_request_auth_value(user.getId())
-                return user
-
-            # special google login method with access tokens
-            elif username == '_google':
-                pass
-
             # special phone login method with verification code
-            elif username[:6] == '_phone':
+            if username[:6] == '_phone':
 
                 # strip type indicator
                 username = username[6:]
@@ -137,7 +141,7 @@ class UserAuth(BasicAuth):
                 # and test password
                 return user.authenticate(password)
 
-        except (GraphAPIError, KeyError):
+        except KeyError:
             pass
 
 # deny all (http) requests

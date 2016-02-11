@@ -17,6 +17,9 @@ schema = {
     'apiKey': {
         'type': 'string',
         'readonly': True
+    },
+    'facebookToken': {
+        'type': 'string'
     }
 }
 
