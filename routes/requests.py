@@ -307,7 +307,7 @@ def onInsert(insertedRequests):
             errors.requests.abortCompleteCreation()
         elif 'points' in request:
             import models.users as users
-            if points > users.User.fromObjectId(
+            if request['points'] > users.User.fromObjectId(
                 app.data.driver.db,
                 g.get('auth_value')
             ).get('points'):
