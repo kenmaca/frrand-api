@@ -10,7 +10,6 @@ config = {
     'public_item_methods': [],
     'datasource': {
         'source': 'apiKeys'
-        }
     },
     'allowed_filters': [],
     'item_methods': [],
