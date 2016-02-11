@@ -22,10 +22,10 @@ schema = {
 
 config = {
     'item_title': 'apiKey',
-    'public_methods': ['GET'],
+    'public_methods': [],
     'public_item_methods': [],
     'allowed_filters': [],
-    'resource_methods': ['POST', 'GET'],
+    'resource_methods': ['POST'],
     'schema': schema,
     'authentication': UserAuth()
 }
