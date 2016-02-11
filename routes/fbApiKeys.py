@@ -4,6 +4,25 @@ from routes.apiKeys import _provision, onInserted
 import errors.fbApiKeys
 from facebook import GraphAPI, GraphAPIError
 
+schema = {
+    'deviceId': {
+        'type': 'string',
+        'minlength': 10,
+        'required': True
+    },
+    'createdBy': {
+        'type': 'objectid'
+    },
+    'apiKey': {
+        'type': 'string',
+        'readonly': True
+    },
+    'facebookToken': {
+        'type': 'string',
+        'required': True
+    }
+}
+
 config = {
     'item_title': 'fbApiKeys',
     'public_methods': [],
@@ -13,6 +32,7 @@ config = {
     },
     'allowed_filters': [],
     'item_methods': [],
+    'schema': schema,
     'resource_methods': ['POST'],
     'authentication': FacebookAuth()
 }
