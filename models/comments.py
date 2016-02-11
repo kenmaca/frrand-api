@@ -30,6 +30,17 @@ class Comment(orm.MongoORM):
         self.set('createdBy', ownerId)
         return self
 
+    def getOwner(self):
+        ''' (Comment) -> models.users.User
+        Gets the owner of this Comment.
+        '''
+
+        import models.users as users
+        return users.User.fromObjectId(
+            self.db,
+            self.get('createdBy')
+        )
+
     def getRequest(self):
         ''' (Comment) -> Request
         Gets the parent Request for this Comment.

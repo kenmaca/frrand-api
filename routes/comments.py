@@ -61,6 +61,15 @@ def onInserted(insertedComments):
         ).setOwner(g.get('auth_value')).commit()
 
         # now message request owner
-        comment.getRequest().getOwner().message(
-            *messages.comments.new(comment.getId())
-        )
+        owners = []
+        [
+            owners.append(c.getOwner())
+            for c in comment.getRequest().getComments()
+            if c not in owners
+        ]
+
+        for owner in owners:
+            if owner.getId() != comment.getOwner().getId():
+                owner.message(
+                    *messages.comments.new(comment.getId())
+                )

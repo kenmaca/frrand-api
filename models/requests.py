@@ -399,3 +399,19 @@ class Request(orm.MongoORM):
                     'for': self.getAttached().getOwner().getId()
                 }
             )
+
+    def getComments(self):
+        ''' (Request) -> list of Comment
+        Gets all Comments for this Request.
+        '''
+
+        import models.comments as comments
+        return [
+            comments.Comment(
+                self.db,
+                comments.Comment.collection,
+                **comment
+            ) for comment in self.db['comments'].find({
+                'requestId': self.getId()
+            })
+        ]

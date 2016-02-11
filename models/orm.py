@@ -216,3 +216,11 @@ class MongoORM:
 
         self._current = patch
         return self
+
+    
+    def __eq__(self, other):
+        ''' (MongoORM, MongoORM) -> bool
+        Determines whether or not this MongoORM is the same as the other.
+        '''
+
+        return self.getId() == other.getId()
