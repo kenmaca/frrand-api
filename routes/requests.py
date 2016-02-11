@@ -316,7 +316,7 @@ def onInserted(insertedRequests):
                 **request
             )
 
-            request.matchAllCandidates()
+            request.matchCandidates()
             _refreshInvites(request)
 
             # keep aside points for awarding
