@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.4
+#!/usr/bin/python3
 from run import app
 with app.test_request_context():
 
