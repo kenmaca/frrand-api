@@ -18,8 +18,12 @@ class APIAuth(BasicAuth):
         MIN_CLIENT_VERSION.
         '''
 
-        # refuse connection if version is too old
-        if float(version[1:]) < MIN_CLIENT_VERSION:
+        # refuse connection if version is too old or does not conform to
+        # protocol
+        try:
+            if float(version[1:]) < MIN_CLIENT_VERSION:
+                abortUnsupportedVersion()
+        except ValueError:
             abortUnsupportedVersion()
 
         try:
