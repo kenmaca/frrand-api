@@ -25,6 +25,7 @@ config = {
     'public_methods': [],
     'public_item_methods': [],
     'allowed_filters': [],
+    'item_methods': [],
     'resource_methods': ['POST'],
     'schema': schema,
     'authentication': UserAuth()
