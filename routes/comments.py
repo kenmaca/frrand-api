@@ -61,15 +61,45 @@ def onInserted(insertedComments):
         ).setOwner(g.get('auth_value')).commit()
 
         # now message request owner
-        owners = []
+        subscribed = []
         [
-            owners.append(c.getOwner())
+            subscribed.append(c.getOwner())
             for c in comment.getRequest().getComments()
-            if c not in owners
+            if c not in subscribed
         ]
 
-        for owner in owners:
-            if owner.getId() != comment.getOwner().getId():
-                owner.message(
-                    *messages.comments.new(comment.getId())
-                )
+        for subscriber in subscribed:
+
+            # prevent gcm to comment author
+            if subscriber.getId() != comment.getOwner().getId():
+
+                # first, Request owner
+                if subscriber.getId() == comment.getRequest().getOwner().getId():
+                    subscriber.message(
+                        *messages.comments.newRequestComment(comment.getId())
+                    )
+
+                # otherwise it's Public
+                elif comment.getRequest().isPublic():
+                    subscriber.message(
+                        *messages.comments.newPublicComment(
+                            comment.getId(),
+                            comment.getRequest().getPublic().getId()
+                        )
+                    )
+
+                # and finally the most restrictive, an Invite
+                else:
+                    try:
+                        subscriber.message(
+                            *messages.comments.newInviteComment(
+                                comment.getId(),
+                                [
+                                    invite for invite
+                                    in comment.getRequest().getInvites()
+                                    if subscriber.getId() == invite.getOwner().getId()
+                                ][0].getId()
+                            )
+                        )
+                    except IndexError:
+                        pass
