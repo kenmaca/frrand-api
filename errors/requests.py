@@ -1,5 +1,12 @@
 from flask import abort
 
+def abortInsufficientPoints():
+    ''' Raised when offering more points than the requester currently
+    has available.
+    '''
+
+    abort(422, 'Insufficient points available.')
+
 def abortExpiredInvite():
     ''' Raised when attempting to use an expired or nonexistent invite.
     '''

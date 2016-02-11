@@ -1,4 +1,4 @@
-from flask import current_app as app
+from flask import current_app as app, g
 from eve.methods.post import post_internal
 from datetime import datetime
 import errors.requests
@@ -300,6 +300,13 @@ def onInsert(insertedRequests):
     for request in insertedRequests:
         if 'complete' in request and request['complete']:
             errors.requests.abortCompleteCreation()
+        elif 'points' in request:
+            import models.users as users
+            if points > users.User.fromObjectId(
+                app.data.driver.db,
+                g.get('auth_value')
+            ).get('points'):
+                errors.requests.abortInsufficientPoints()
 
 # on_inserted_requests
 def onInserted(insertedRequests):
