@@ -20,6 +20,12 @@ schema = {
             + '\s[a-zA-Z\s]+$'
         )
     },
+    'buildingName': {
+        'type': 'string'
+    },
+    'roomNumber': {
+        'type': 'string'
+    },
     'phone': {
         'type': 'string',
         'regex': '\D*(\d*)\D*(\d{3})\D*(\d{3})\D*(\d{4})\D*(\d*)$'
