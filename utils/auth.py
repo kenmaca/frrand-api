@@ -63,7 +63,7 @@ class APIAuth(BasicAuth):
             pass
 
 # generate apiKey facebookId authentication method
-class FacebookAuth(BasicAuth):
+class FacebookAuth(TokenAuth):
     ''' An authentication method using a FacebookId allowing only access
     to self-created resources.
 
@@ -77,8 +77,8 @@ class FacebookAuth(BasicAuth):
     as Facebook access could be compromised!
     '''
 
-    def check_auth(self, version, token, allowed_roles, resource, method):
-        ''' (FacebookAuth, str, str, list, str, str) -> bool
+    def check_auth(self, token, allowed_roles, resource, method):
+        ''' (FacebookAuth, str, list, str, str) -> bool
         Checks if the provided token is a currently known FacebookId and has access
         to the requested resource.
         '''
