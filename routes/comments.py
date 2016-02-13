@@ -65,7 +65,7 @@ def onInserted(insertedComments):
         [
             subscribed.append(c.getOwner())
             for c in comment.getRequest().getComments()
-            if c not in subscribed
+            if c.getOwner() not in subscribed
         ]
 
         for subscriber in subscribed:
