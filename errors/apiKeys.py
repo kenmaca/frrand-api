@@ -5,4 +5,4 @@ def abortFaultyDeviceId():
     deviceId.
     '''
 
-    abort(422, 'Unable to create accepted invite')
+    abort(401, 'Unable to create an APIKey due to a faulty deviceId being provided.')
