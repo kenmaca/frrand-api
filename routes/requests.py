@@ -61,8 +61,7 @@ schema = {
                     'type': 'string'
                 },
                 'photo': {
-                    'type': 'string',
-                    'readonly': True
+                    'type': 'string'
                 }
             }
         }
