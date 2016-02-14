@@ -60,13 +60,31 @@ def onInserted(insertedComments):
             **insertedComment
         ).setOwner(g.get('auth_value')).commit()
 
-        # now message request owner
+        request = comment.getRequest()
+        owner = request.getOwner()
         subscribed = []
-        [
-            subscribed.append(c.getOwner())
-            for c in comment.getRequest().getComments()
-            if c.getOwner() not in subscribed
-        ]
+        invitees = {}
+
+        # add the owner
+        if owner not in subscribed:
+            subscribed.append(owner)
+
+        # now, add all invitees
+        for invite in request.getInvites():
+            invitee = invite.getOwner()
+            if invitee not in subscribed:
+                subscribed.append(invitee)
+
+                # store invitees since we want to pass them to their own
+                # invite and not the public one
+                invitees[invitee] = invite
+
+        # and finally, all commenters if the Request was public
+        if request.isPublic():
+            for c in request.getComments():
+                commenter = c.getOwner()
+                if commenter not in subscribed:
+                    subscribed.append(commenter) 
 
         for subscriber in subscribed:
 
@@ -74,32 +92,25 @@ def onInserted(insertedComments):
             if subscriber.getId() != comment.getOwner().getId():
 
                 # first, Request owner
-                if subscriber.getId() == comment.getRequest().getOwner().getId():
+                if subscriber.getId() == owner.getId():
                     subscriber.message(
                         *messages.comments.newRequestComment(comment.getId())
                     )
 
-                # otherwise it's Public
-                elif comment.getRequest().isPublic():
+                # if it's an Invite, send them to their own Invite display
+                elif subscriber in invitees:
                     subscriber.message(
-                        *messages.comments.newPublicComment(
+                        *messages.comments.newInviteComment(
                             comment.getId(),
-                            comment.getRequest().getPublic().getId()
+                            invitees[subscriber].getId()
                         )
                     )
 
-                # and finally the most restrictive, an Invite
+                # otherwise it's Public
                 else:
-                    try:
-                        subscriber.message(
-                            *messages.comments.newInviteComment(
-                                comment.getId(),
-                                [
-                                    invite for invite
-                                    in comment.getRequest().getInvites()
-                                    if subscriber.getId() == invite.getOwner().getId()
-                                ][0].getId()
-                            )
+                    subscriber.message(
+                        *messages.comments.newPublicComment(
+                            comment.getId(),
+                            request.getPublic().getId()
                         )
-                    except IndexError:
-                        pass
+                    )
