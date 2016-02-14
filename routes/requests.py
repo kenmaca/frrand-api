@@ -1,6 +1,8 @@
 from flask import current_app as app, g
 from eve.methods.post import post_internal
 from datetime import datetime
+from googleplaces import GooglePlaces, GooglePlacesError
+from config import PLACES_API_KEY
 import errors.requests
 import messages.requests
 
@@ -57,6 +59,10 @@ schema = {
                 },
                 'placeId': {
                     'type': 'string'
+                },
+                'photo': {
+                    'type': 'string',
+                    'readonly': True
                 }
             }
         }
@@ -313,6 +319,14 @@ def onInsert(insertedRequests):
             ).get('points'):
                 errors.requests.abortInsufficientPoints()
 
+        # grab Google places photo
+        for place in request['places']:
+            if place['placeId']:
+                place['photo'] = _getPlacePhoto(
+                    PLACES_API_KEY,
+                    place['placeId']
+                )
+
 # on_inserted_requests
 def onInserted(insertedRequests):
     ''' (list of dict) -> NoneType
@@ -336,6 +350,21 @@ def onInserted(insertedRequests):
             request.commit()
 
 # helpers
+
+def _getPlacePhoto(googleApiKey, placeId):
+    ''' (str, str) -> str
+    Gets the first photo associated with the given placeId.
+    '''
+
+    try:
+        photo = next(GooglePlaces(googleApiKey).get_place(place_id=placeId).photos)
+        photo.get(maxheight=800, maxwidth=800)
+
+        return photo.url
+
+    # empty if no such photo
+    except (StopIteration, GooglePlacesError):
+        pass
 
 def _generateRequestInvites(request, invitesInBatch=1):
     ''' (models.requests.Request, int) -> NoneType
