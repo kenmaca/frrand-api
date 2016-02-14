@@ -77,7 +77,7 @@ def onInserted(insertedComments):
 
                 # store invitees since we want to pass them to their own
                 # invite and not the public one
-                invitees[invitee] = invite
+                invitees[invitee.getId()] = invite
 
         # and finally, all commenters if the Request was public
         if request.isPublic():
@@ -98,11 +98,11 @@ def onInserted(insertedComments):
                     )
 
                 # if it's an Invite, send them to their own Invite display
-                elif subscriber in invitees:
+                elif subscriber.getId() in invitees:
                     subscriber.message(
                         *messages.comments.newInviteComment(
                             comment.getId(),
-                            invitees[subscriber].getId()
+                            invitees[subscriber.getId()].getId()
                         )
                     )
 
