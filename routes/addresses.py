@@ -20,6 +20,15 @@ schema = {
             + '\s[a-zA-Z\s]+$'
         )
     },
+    'components': {
+        'type': 'dict',
+        'valueschema': {
+            'type': 'string'
+        },
+        'propertyschema': {
+            'type': 'string'
+        }
+    },
     'buildingName': {
         'type': 'string'
     },
@@ -33,6 +42,13 @@ schema = {
     'location': {
         'type': 'point',
         'required': True
+    },
+    'approximatedCoordinates': {
+        'type': 'list',
+        'readonly': True,
+        'schema': {
+            'type': 'float'
+        }
     },
     'placeId': {
         'type': 'string'

@@ -21,7 +21,7 @@ class PublicInvite(orm.MongoORM):
 
         # use invite's embedView as they share similarities
         import models.requestInvites as requestInvites
-        return requestInvites.Invite.embedView(self)
+        return requestInvites.Invite.embedView(self, True)
 
     def getRequest(self):
         ''' (PublicInvite) -> Request

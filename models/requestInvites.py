@@ -25,7 +25,7 @@ class Invite(orm.MongoORM):
 
         return orm.MongoORM.findOne(db, Invite, **query)
 
-    def embedView(self):
+    def embedView(self, limit=False):
         ''' (Invite) -> dict
         Embeds the parent Request as well as any other inaccessable documents.
         '''
@@ -34,10 +34,12 @@ class Invite(orm.MongoORM):
 
         embed = self.view()
         embed['requestId'] = self.getRequest().view()
+
+        # show limited address if not attached
         embed['requestId']['destination'] = addresses.Address.fromObjectId(
             self.db,
             embed['requestId']['destination']
-        ).view()
+        ).view(limit or not self.isAttached())
 
         return embed
 
