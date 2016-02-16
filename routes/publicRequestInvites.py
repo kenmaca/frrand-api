@@ -1,4 +1,4 @@
-from flask import current_app as app
+from flask import current_app as app, g
 import errors.publicRequestInvites
 from pymongo import DESCENDING
 
@@ -18,6 +18,10 @@ schema = {
             'field': '_id'
         },
         'default': None
+    },
+    'acceptedByCurrentUser': {
+        'type': 'boolean',
+        'readonly': True
     },
     'location': {
         'type': 'point',
@@ -81,13 +85,18 @@ def onFetchedItem(publicInvite):
     '''
 
     import models.publicRequestInvites as publicRequestInvites
-    publicInvite.update(
-        publicRequestInvites.PublicInvite(
-            app.data.driver.db,
-            publicRequestInvites.PublicInvite.collection,
-            **publicInvite
-        ).embedView()
+    public = publicRequestInvites.PublicInvite(
+        app.data.driver.db,
+        publicRequestInvites.PublicInvite.collection,
+        **publicInvite
     )
+    publicInvite.update(public.embedView())
+
+    # inject into view to show if current user has accepted this invite
+    publicInvite['acceptedByCurrentUser'] = g.get('auth_value') in [
+        invite.getOwner().getId()
+        for invite in public.getRequest().getInvites()
+    ]
 
     # remove redundant location data (used for internal sorting)
     if 'location' in publicInvite:
