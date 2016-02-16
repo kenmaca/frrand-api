@@ -1,4 +1,5 @@
 import models.orm as orm
+from config import PLACES_API_KEY
 from geopy.geocoders import GoogleV3
 
 class Address(orm.MongoORM):
@@ -30,7 +31,7 @@ class Address(orm.MongoORM):
 
         if not self.exists('address'):
             try:
-                geocoded = GoogleV3().reverse(
+                geocoded = GoogleV3(api_key=PLACES_API_KEY).reverse(
                     self.get('location')['coordinates'][::-1]
                 )
 
@@ -87,7 +88,7 @@ class Address(orm.MongoORM):
                 self.set(
                     'components',
                     _splitInComponents(
-                        GoogleV3().geocode(
+                        GoogleV3(api_key=PLACES_API_KEY).geocode(
                             self.get('address')
                         )
                     )
@@ -136,7 +137,7 @@ class Address(orm.MongoORM):
         '''
 
         try:
-            geo = GoogleV3().geocode(address)
+            geo = GoogleV3(api_key=PLACES_API_KEY).geocode(address)
             if (
                 (
                     abs(geo.longitude - self.get('location')['coordinates'][0]) 
