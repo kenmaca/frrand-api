@@ -42,8 +42,8 @@ class Address(orm.MongoORM):
                 self.set(
                     'approximatedCoordinates',
                     [
-                        geocoded[1].latitude,
-                        geocoded[1].longitude
+                        geocoded[1].longitude,
+                        geocoded[1].latitude
                     ]
                 )
 
