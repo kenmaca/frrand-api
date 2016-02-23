@@ -20,6 +20,9 @@ app.register_blueprint(eve_docs, url_prefix='/docs')
 if __name__ == '__main__':
 
     # run
-    server = HTTPServer(WSGIContainer(app))
-    server.listen(80)
+    server = HTTPServer(WSGIContainer(app), ssl_options={
+        'certfile': 'dev-api.frrand.com.crt',
+        'keyfile': 'dev-api.frrand.com.key'
+    })
+    server.listen(443)
     IOLoop.instance().start()
