@@ -9,6 +9,7 @@ import routes.publicRequestInvites
 import routes.feedback
 import routes.comments
 import routes.profiles
+import routes.beta
 from config import *
 
 # Routes
@@ -23,7 +24,8 @@ DOMAIN = {
     'publicRequestInvites': routes.publicRequestInvites.config,
     'feedback': routes.feedback.config,
     'comments': routes.comments.config,
-    'profiles': routes.profiles.config
+    'profiles': routes.profiles.config,
+    'beta': routes.beta.config
 }
 
 # Utils
@@ -44,3 +46,4 @@ def init(app):
     routes.feedback.init(app)
     routes.comments.init(app)
     routes.profiles.init(app)
+    routes.beta.init(app)

@@ -67,6 +67,11 @@ schema = {
         'readonly': True,
         'default': 0
     },
+    'activated': {
+        'type': 'boolean',
+        'readonly': True,
+        'default': False
+    },
     'phone': {
         'type': 'string',
         'unique': True,

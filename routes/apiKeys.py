@@ -11,6 +11,9 @@ schema = {
         'minlength': 10,
         'required': True
     },
+    'betaKey': {
+        'type': 'string',
+    },
     'createdBy': {
         'type': 'objectid'
     },
@@ -78,6 +81,21 @@ def _provision(apiKey):
         app.data.driver.db,
         apiKey['createdBy']
     )
+
+    # require new users to activate their accounts with a beta key
+    if not user.exists('activated') or not user.get('activated'):
+        try:
+            import models.beta as beta
+            betaKey = beta.BetaKey.findOne(betaKey=apiKey['betaKey'])
+            if betaKey.isUsed():
+                raise Exception()
+
+            # mark as used and activate the user account
+            betaKey.use(user).commit()
+            user.set('activated', True).commit()
+
+        except Exception:
+            errors.apiKeys.abortInvalidBetaKey()
 
     # only insert into MongoDB if GCM went through
     if user.message(
