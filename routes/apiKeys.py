@@ -86,6 +86,7 @@ def _provision(apiKey):
     if not user.exists('activated') or not user.get('activated'):
         try:
             import models.beta as beta
+            apiKey['betaKey'] = apiKey['betaKey'].upper()
             betaKey = beta.BetaKey.findOne(
                 app.data.driver.db,
                 betaKey=apiKey['betaKey']

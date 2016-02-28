@@ -23,7 +23,8 @@ schema = {
     },
     'limit': {
         'type': 'integer',
-        'default': 1
+        'default': 1,
+        'min': 1
     },
     'pointSupplement': {
         'type': 'integer',
@@ -66,3 +67,7 @@ def onInsert(insertBeta):
                     for x in range(6)
                 )
             )
+        else:
+
+            # force uppercase
+            beta['betaKey'] = beta['betaKey'].upper()
