@@ -24,12 +24,13 @@ class BetaKey(orm.MongoORM):
         return orm.MongoORM.findOne(db, BetaKey, **query)
 
     def use(self, user):
-        ''' (BetaKey, User) -> NoneType
+        ''' (BetaKey, User) -> BetaKey
         Sets this BetaKey as used by the User.
         '''
 
         self.set('usedBy', user.getId())
         self.set('usedOn', datetime.utcnow())
+        return self
 
     def isUsed(self):
         ''' (BetaKey) -> bool

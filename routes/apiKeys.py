@@ -86,15 +86,19 @@ def _provision(apiKey):
     if not user.exists('activated') or not user.get('activated'):
         try:
             import models.beta as beta
-            betaKey = beta.BetaKey.findOne(betaKey=apiKey['betaKey'])
+            betaKey = beta.BetaKey.findOne(
+                app.data.driver.db,
+                betaKey=apiKey['betaKey']
+            )
+
             if betaKey.isUsed():
-                raise Exception()
+                raise KeyError()
 
             # mark as used and activate the user account
             betaKey.use(user).commit()
             user.set('activated', True).commit()
 
-        except Exception:
+        except KeyError:
             errors.apiKeys.abortInvalidBetaKey()
 
     # only insert into MongoDB if GCM went through
