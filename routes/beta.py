@@ -5,7 +5,9 @@ import string
 
 schema = {
     'betaKey': {
-        'type': 'string'
+        'type': 'string',
+        'minlength': 1,
+        'unique': True
     },
     'usedBy': {
         'type': 'list',
