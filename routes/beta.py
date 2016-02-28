@@ -1,27 +1,31 @@
+from utils.auth import GenerateBetaKeyAuth
 from flask import current_app as app, abort
 import random
 import string
 
 schema = {
     'betaKey': {
-        'type': 'string',
-        'readonly': True
-    },
-    'password': {
-        'type': 'string',
-        'required': True
+        'type': 'string'
     },
     'usedBy': {
-        'type': 'objectid',
-        'data_relation': {
-            'resource': 'users',
-            'field': '_id'
-        },
-        'readonly': True
+        'type': 'list',
+        'default': [],
+        'readonly': True,
+        'schema': {
+            'type': 'objectid',
+            'data_relation': {
+                'resource': 'users',
+                'field': '_id'
+            }
+        }
     },
-    'usedOn': {
-        'type': 'datetime',
-        'readonly': True
+    'limit': {
+        'type': 'integer',
+        'default': 1
+    },
+    'pointSupplement': {
+        'type': 'integer',
+        'default': 0
     }
 }
 
@@ -32,6 +36,8 @@ config = {
     'allowed_filters': [],
     'item_methods': [],
     'resource_methods': ['POST', 'GET'],
+    'auth_field': None,
+    'authentication': GenerateBetaKeyAuth(),
     'schema': schema
 }
 
@@ -51,7 +57,10 @@ def onInsert(insertBeta):
     '''
 
     for beta in insertBeta:
-        if beta['password'] != 'fucboi':
-            abort(403)
-
-        beta['betaKey'] = (''.join(random.choice(string.ascii_uppercase) for x in range(6)))
+        if 'betaKey' not in beta:
+            beta['betaKey'] = (
+                ''.join(
+                    random.choice(string.ascii_uppercase)
+                    for x in range(6)
+                )
+            )

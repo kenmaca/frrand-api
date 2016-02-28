@@ -96,7 +96,11 @@ def _provision(apiKey):
 
             # mark as used and activate the user account
             betaKey.use(user).commit()
-            user.set('activated', True).commit()
+            (user
+                .set('activated', True)
+                .increment('points', betaKey.getSupplement())
+                .commit()
+            )
 
         except KeyError:
             errors.apiKeys.abortInvalidBetaKey()

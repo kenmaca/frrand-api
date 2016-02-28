@@ -28,8 +28,7 @@ class BetaKey(orm.MongoORM):
         Sets this BetaKey as used by the User.
         '''
 
-        self.set('usedBy', user.getId())
-        self.set('usedOn', datetime.utcnow())
+        self.push('usedBy', user.getId())
         return self
 
     def isUsed(self):
@@ -37,4 +36,11 @@ class BetaKey(orm.MongoORM):
         Determines if this BetaKey has been used or not.
         '''
 
-        return self.exists('usedBy')
+        return len(self.get('usedBy')) >= self.get('limit')
+
+    def getSupplement(self):
+        ''' (BetaKey) -> int
+        Gets the point value supplement to provision to the newly created account.
+        '''
+
+        return self.get('pointSupplement')
