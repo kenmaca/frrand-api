@@ -143,6 +143,11 @@ schema = {
         'type': 'integer',
         'min': 1,
         'default': 1
+    },
+    'numberOfComments' : {
+        'type': 'integer',
+        'default': 0,
+        'readonly': True
     }
 }
 

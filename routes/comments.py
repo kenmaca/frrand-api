@@ -65,6 +65,12 @@ def onInserted(insertedComments):
         subscribed = []
         invitees = {}
 
+        # update numberOfComments
+        request.set(
+            'numberOfComments',
+            len(request.getComments())
+        ).commit()
+
         # add the owner
         if owner not in subscribed:
             subscribed.append(owner)
