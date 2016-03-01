@@ -1,5 +1,6 @@
 import models.orm as orm
 import messages.feedback
+from datetime import datetime
 
 class Feedback(orm.MongoORM):
     ''' A representation of Feedback in Frrand.
@@ -55,6 +56,7 @@ class Feedback(orm.MongoORM):
                         if invite.exists('comment') else ''
                     )
                 ),
+                '_created': datetime.utcnow(),
                 'for': target.getId()
             }
         )
