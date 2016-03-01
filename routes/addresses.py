@@ -12,13 +12,7 @@ schema = {
         'default': 'work'
     },
     'address': {
-        'type': 'string',
-        'regex': (
-            '^[0-9]+\s[a-zA-Z0-9\s]+,'
-            + '\s[a-zA-Z\s]+,'
-            + '\s[A-Z]{2}\s[a-zA-Z0-9\s]+,'
-            + '\s[a-zA-Z\s]+$'
-        )
+        'type': 'string'
     },
     'components': {
         'type': 'dict',
