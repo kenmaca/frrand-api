@@ -260,7 +260,7 @@ class Request(orm.MongoORM):
         Determines whether or not this Request is complete.
         '''
 
-        return self.get('complete')
+        return self.get('complete') or self.isMutuallyCancelled()
 
     def complete(self):
         ''' (Request) -> Request
@@ -415,3 +415,64 @@ class Request(orm.MongoORM):
                 'requestId': self.getId()
             })
         ]
+
+    get requestCancellation(self):
+        ''' (Request) -> Request
+        Attempts to cancel this Request (by notifying all participants via
+        GCM). Purges all Invites, Candidates, PublicInvites, and prevents
+        any PublicInvites from being created.
+        '''
+
+        # don't allow mutually cancelled to be cancelled again
+        if self.get('isMutuallyCancelled'):
+
+            # final cancellation stage, perform cancelling tasks
+            if self.isMutuallyCancelled():
+
+                # release points back to requester
+                self.getOwner().spendPoints(
+                    self.getPoints()
+                ).awardPoints(
+                    self.getPoints()
+                ).commit()
+
+                # remove public listing if present
+                if self.isPublic():
+                    self.getPublic().remove()
+
+                # remove invites if not attached
+                if not self.isAttached():
+                    [self.removeInvite(invite) for invite in self.getInvites()]
+
+                # notify all parties
+                self.getOwner().message('requestMutuallyCancelled', self.getId())
+                if self.isAttached():
+                    self.getAttached().getOwner().message(
+                        'inviteMutuallyCancelled',
+                        self.getAttached().getId()
+                    )
+
+                # and public/invites arent generated because cancelled is like complete
+                self.set('isMutuallyCancelled', True)
+
+            # or prepare the cancellation process, if requester initiated
+            elif self.get('cancel'):
+                self.getAttached().getOwner().message(
+                    'promptInviteCancellation',
+                    self.getAttached().getId()
+                )
+
+            # if invitee is requesting a cancellation
+            elif self.getAttached().get('cancel'):
+                self.getOwner().message('promptRequestCancellation', self.getId())                    
+
+    get isMutuallyCancelled(self):
+        ''' (Request) -> bool
+        Determines if this Request is mutually cancellable if there is
+        a confirmed Invite attached to this Request.
+        '''
+
+        if self.isAttached():
+            return self.get('cancel') and self.getAttached().get('cancel')
+        else:
+            return self.get('cancel')

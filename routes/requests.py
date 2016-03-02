@@ -144,6 +144,15 @@ schema = {
         'min': 1,
         'default': 1
     },
+    'cancel': {
+        'type': 'boolean',
+        'default': False
+    },
+    'isMutuallyCancelled': {
+        'type': 'boolean',
+        'default': False,
+        'readonly': True
+    },
     'numberOfComments' : {
         'type': 'integer',
         'default': 0,
@@ -194,6 +203,10 @@ def onUpdate(updated, original):
     # prevent change of points awarded
     if 'points' in updated:
         errors.requests.abortImmutablePoints()
+
+    # prevent uncancellation if mutually cancelled
+    if 'cancel' in updated and originalRequest.isMutuallyCancelled():
+        errors.requests.abortImmutableMutuallyCancelled()
 
     # inviteIds have changed
     if 'inviteIds' in updated:
@@ -262,6 +275,10 @@ def onUpdated(changes, original):
         original['_id']
     )
 
+    # requesting cancellation
+    if 'cancel' in changes:
+        request.requestCancellation().commit()
+
     # post feedback from requester
     if 'rating' in changes:
         import models.feedback as feedback
@@ -313,7 +330,7 @@ def onInsert(insertedRequests):
     '''
 
     for request in insertedRequests:
-        if 'complete' in request and request['complete']:
+        if 'complete' in request and request['complete'] or 'cancel' in request and request['cancel']:
             errors.requests.abortCompleteCreation()
         elif 'points' in request:
             import models.users as users
@@ -418,7 +435,7 @@ def _refreshInvites(request):
     '''
 
     # prevent generating anymore invites once attached
-    if not request.isAttached():
+    if not request.isAttached() and not request.isComplete():
         if not request.get('inviteIds'):
             if request.get('candidates'):
                 _generateRequestInvites(request, BATCH_SIZE)

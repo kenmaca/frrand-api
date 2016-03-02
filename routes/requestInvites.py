@@ -48,6 +48,10 @@ schema = {
             'complete'
         ]
     },
+    'cancel': {
+        'type': 'boolean',
+        'default': False
+    },
     'comment': {
         'type': 'string',
         'maxlength': 240,
@@ -169,6 +173,10 @@ def onUpdate(changes, invite):
         ):
             errors.requestInvites.abortImmutableFeedback()
 
+    # prevent enabling mutually cancelled requests
+    elif 'cancel' in changes and requestInvite.getRequest().isMutuallyCancelled():
+        errors.requestInvites.abortImmutableMutuallyCancelled()
+
 # on_updated_requestInvites
 def onUpdated(changes, invite):
     ''' (dict, dict) -> NoneType
@@ -181,25 +189,34 @@ def onUpdated(changes, invite):
         invite['_id']
     )
 
-    # notify requester of accept
-    if 'accepted' in changes:
-        requestInvite.accept()
+    # remove invite completely if invite is now expired
+    if requestInvite.isExpired():
+        _removeInvite(requestInvite)
+    else:
 
-    # post feedback from deliverer
-    if 'rating' in changes:
-        import models.feedback as feedback
-        feedback.Feedback.new(
-            app.data.driver.db,
-            requestInvite.getRequest(),
-            False
-        )
+        # trigger request mutual cancellation process
+        if 'cancel' in changes:
+            requestInvite.getRequest().requestCancellation().commit()
 
-    # feedback exists, so just modify comment
-    elif 'comment' in changes:
-        requestInvite.getFeedback().set(
-            'comment',
-            changes['comment']
-        ).commit()
+        # notify requester of accept
+        if 'accepted' in changes:
+            requestInvite.accept()
+
+        # post feedback from deliverer
+        if 'rating' in changes:
+            import models.feedback as feedback
+            feedback.Feedback.new(
+                app.data.driver.db,
+                requestInvite.getRequest(),
+                False
+            )
+
+        # feedback exists, so just modify comment
+        elif 'comment' in changes:
+            requestInvite.getFeedback().set(
+                'comment',
+                changes['comment']
+            ).commit()
 
 # on_delete_item_requestInvites
 def onDeleteItem(invite):

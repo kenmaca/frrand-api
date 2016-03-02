@@ -19,6 +19,12 @@ def abortImmutableAccepted():
         + 'delete Invite if refusing'
     )
 
+def abortImmutableMutuallyCancelled():
+    ''' Raised when attempting to modify a mutually cancelled Request.
+    '''
+
+    errors.requests.abortImmutableMutuallyCancelled()
+
 def abortFeedbackUncompleted():
     ''' Raised when attempting to submit Feedback for a Request that's
     incomplete.

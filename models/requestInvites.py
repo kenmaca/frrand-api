@@ -49,11 +49,16 @@ class Invite(orm.MongoORM):
         '''
 
         return (
-            not self.get('attached')
-            and not self.get('accepted')
-            and (
-                self.get('requestExpiry')
-                < datetime.utcnow().replace(tzinfo=UTC)
+            (
+                not self.get('attached')
+                and not self.get('accepted')
+                and (
+                    self.get('requestExpiry')
+                    < datetime.utcnow().replace(tzinfo=UTC)
+                )
+            ) or (
+                not self.get('attached')
+                and self.get('cancel')
             )
         )
 
@@ -120,7 +125,7 @@ class Invite(orm.MongoORM):
         Determines whether or not this Invite is complete.
         '''
 
-        return self.get('complete')
+        return self.getRequest().isComplete()
 
     def getRequest(self):
         ''' (Invite) -> models.requests.Request
