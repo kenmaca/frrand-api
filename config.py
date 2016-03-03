@@ -1,7 +1,7 @@
 # Eve
 DEBUG = True
 API_NAME = 'Frrand API'
-SERVER_NAME = 'api.frrand.com'
+SERVER_NAME = 'dev-api.frrand.com'
 CACHE_CONTROL = 'max-age=0,must-revalidate'
 MEDIA_BASE_URL = 'https://%s' % SERVER_NAME
 RETURN_MEDIA_AS_URL = True

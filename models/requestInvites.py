@@ -58,6 +58,7 @@ class Invite(orm.MongoORM):
                 )
             ) or (
                 not self.get('attached')
+                and self.exists('cancel')
                 and self.get('cancel')
             )
         )

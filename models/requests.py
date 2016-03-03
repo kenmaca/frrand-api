@@ -416,7 +416,7 @@ class Request(orm.MongoORM):
             })
         ]
 
-    get requestCancellation(self):
+    def requestCancellation(self):
         ''' (Request) -> Request
         Attempts to cancel this Request (by notifying all participants via
         GCM). Purges all Invites, Candidates, PublicInvites, and prevents
@@ -466,13 +466,15 @@ class Request(orm.MongoORM):
             elif self.getAttached().get('cancel'):
                 self.getOwner().message('promptRequestCancellation', self.getId())                    
 
-    get isMutuallyCancelled(self):
+        return self
+
+    def isMutuallyCancelled(self):
         ''' (Request) -> bool
         Determines if this Request is mutually cancellable if there is
         a confirmed Invite attached to this Request.
         '''
 
         if self.isAttached():
-            return self.get('cancel') and self.getAttached().get('cancel')
+            return self.exists('cancel') and self.get('cancel') and self.getAttached().get('cancel') and self.getAttached().get('cancel')
         else:
-            return self.get('cancel')
+            return self.exists('cancel') and self.get('cancel')
