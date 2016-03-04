@@ -8,6 +8,7 @@ from settings import init
 from tornado.wsgi import WSGIContainer
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
+import tornado.options
 
 # start eve
 app = Eve(auth=APIAuth())
@@ -20,6 +21,7 @@ app.register_blueprint(eve_docs, url_prefix='/docs')
 if __name__ == '__main__':
 
     # run
+    tornado.options.parse_command_line()
     server = HTTPServer(WSGIContainer(app), ssl_options={
         'certfile': 'dev-api.frrand.com.crt',
         'keyfile': 'dev-api.frrand.com.key'
