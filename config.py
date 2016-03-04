@@ -6,6 +6,7 @@ CACHE_CONTROL = 'max-age=0,must-revalidate'
 MEDIA_BASE_URL = 'https://%s' % SERVER_NAME
 RETURN_MEDIA_AS_URL = True
 RETURN_MEDIA_AS_BASE64_STRING = False
+X_DOMAINS = '*'
 
 # Database
 MONGO_HOST = 'localhost'
