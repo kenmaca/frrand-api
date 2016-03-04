@@ -424,7 +424,7 @@ class Request(orm.MongoORM):
         '''
 
         # don't allow mutually cancelled to be cancelled again
-        if self.get('isMutuallyCancelled'):
+        if not self.get('isMutuallyCancelled'):
 
             # final cancellation stage, perform cancelling tasks
             if self.isMutuallyCancelled():
@@ -456,7 +456,7 @@ class Request(orm.MongoORM):
                 self.set('isMutuallyCancelled', True)
 
             # or prepare the cancellation process, if requester initiated
-            elif self.get('cancel'):
+            elif self.exists('cancel') and self.get('cancel'):
                 self.getAttached().getOwner().message(
                     'promptInviteCancellation',
                     self.getAttached().getId()
@@ -475,6 +475,6 @@ class Request(orm.MongoORM):
         '''
 
         if self.isAttached():
-            return self.exists('cancel') and self.get('cancel') and self.getAttached().get('cancel') and self.getAttached().get('cancel')
+            return self.exists('cancel') and self.get('cancel') and self.getAttached().exists('cancel') and self.getAttached().get('cancel')
         else:
             return self.exists('cancel') and self.get('cancel')
