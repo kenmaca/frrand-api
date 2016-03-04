@@ -176,3 +176,26 @@ class GenerateBetaKeyAuth(TokenAuth):
         '''
 
         return token == 'fucboi'
+
+# administrative endpoint
+class AdminAuth(TokenAuth):
+    ''' An authentication method using an apiKey on an account tagged
+    as an administrator.
+    '''
+
+    def check_auth(self, token, allowed_roles, resource, method):
+        ''' (UserAuth, str, list, str, str) -> bool
+        Checks if the provided apiKey is in the
+        database and is attached to an administrator.
+        '''
+
+        try:
+            import models.apiKeys as apiKeys
+            user = apiKeys.APIKey.findOne(
+                app.data.driver.db,
+                apiKey=token
+            ).getOwner()
+            return user.exists('isAdmin') and user.get('isAdmin')
+
+        except KeyError:
+            pass

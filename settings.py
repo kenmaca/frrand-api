@@ -10,6 +10,7 @@ import routes.feedback
 import routes.comments
 import routes.profiles
 import routes.beta
+import routes.adminUsers
 from config import *
 
 # Routes
@@ -25,7 +26,8 @@ DOMAIN = {
     'feedback': routes.feedback.config,
     'comments': routes.comments.config,
     'profiles': routes.profiles.config,
-    'beta': routes.beta.config
+    'beta': routes.beta.config,
+    'adminUsers': routes.adminUsers.config
 }
 
 # Utils
@@ -47,3 +49,4 @@ def init(app):
     routes.comments.init(app)
     routes.profiles.init(app)
     routes.beta.init(app)
+    routes.adminUsers.init(app)
