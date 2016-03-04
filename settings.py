@@ -11,6 +11,7 @@ import routes.comments
 import routes.mirrors.profiles
 import routes.beta
 import routes.mirrors.adminUsers
+import routes.mirrors.adminApiKeys
 from config import *
 
 # Routes
@@ -27,7 +28,8 @@ DOMAIN = {
     'comments': routes.comments.config,
     'profiles': routes.mirrors.profiles.config,
     'beta': routes.beta.config,
-    'adminUsers': routes.mirrors.adminUsers.config
+    'adminUsers': routes.mirrors.adminUsers.config,
+    'adminApiKeys': routes.mirrors.adminApiKeys.config
 }
 
 # Utils
@@ -50,3 +52,4 @@ def init(app):
     routes.mirrors.profiles.init(app)
     routes.beta.init(app)
     routes.mirrors.adminUsers.init(app)
+    routes.mirrors.adminApiKeys.init(app)
