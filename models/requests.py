@@ -424,7 +424,7 @@ class Request(orm.MongoORM):
         '''
 
         # don't allow mutually cancelled to be cancelled again
-        if not self.get('isMutuallyCancelled'):
+        if not (self.exists('isMutuallyCancelled') and self.get('isMutuallyCancelled')):
 
             # final cancellation stage, perform cancelling tasks
             if self.isMutuallyCancelled():
