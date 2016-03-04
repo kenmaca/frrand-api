@@ -38,3 +38,14 @@ class APIKey(orm.MongoORM):
         ]
 
         return self
+
+    def getOwner(self):
+        ''' (APIKey) -> models.users.User
+        Gets the owner of this APIKey.
+        '''
+
+        import models.users as users
+        return users.User.fromObjectId(
+            self.db,
+            self.get('createdBy')
+        )

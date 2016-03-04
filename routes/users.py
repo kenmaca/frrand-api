@@ -124,6 +124,11 @@ schema = {
     'googleAccessToken': {
         'type': 'string'
     },
+    'isAdmin': {
+        'type': 'boolean',
+        'default': False,
+        'readonly': True
+    },
     'googleId': {
         'type': 'string',
         'unique': True,
