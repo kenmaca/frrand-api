@@ -8,9 +8,9 @@ import routes.requestInvites
 import routes.publicRequestInvites
 import routes.feedback
 import routes.comments
-import routes.profiles
+import routes.mirrors.profiles
 import routes.beta
-import routes.adminUsers
+import routes.mirrors.adminUsers
 from config import *
 
 # Routes
@@ -25,9 +25,9 @@ DOMAIN = {
     'publicRequestInvites': routes.publicRequestInvites.config,
     'feedback': routes.feedback.config,
     'comments': routes.comments.config,
-    'profiles': routes.profiles.config,
+    'profiles': routes.mirrors.profiles.config,
     'beta': routes.beta.config,
-    'adminUsers': routes.adminUsers.config
+    'adminUsers': routes.mirrors.adminUsers.config
 }
 
 # Utils
@@ -47,6 +47,6 @@ def init(app):
     routes.publicRequestInvites.init(app)
     routes.feedback.init(app)
     routes.comments.init(app)
-    routes.profiles.init(app)
+    routes.mirrors.profiles.init(app)
     routes.beta.init(app)
-    routes.adminUsers.init(app)
+    routes.mirrors.adminUsers.init(app)

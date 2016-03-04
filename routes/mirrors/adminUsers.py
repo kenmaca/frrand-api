@@ -1,7 +1,18 @@
 from flask import current_app as app
 from utils.auth import AdminAuth
+import copy
 import routes.users
-import errors.users
+
+# copy from users schema, but remove readonly
+schema = copy.deepcopy(routes.users.schema)
+schema['points']['readonly'] = False
+schema['pendingPoints']['readonly'] = False
+schema['activated']['readonly'] = False
+schema['phoneVerified']['readonly'] = False
+schema['isAdmin']['readonly'] = False
+schema['facebookId']['readonly'] = False
+schema['rating']['readonly'] = False
+schema['numberOfRatings']['readonly'] = False
 
 config = {
     'item_title': 'adminUser',
@@ -13,7 +24,7 @@ config = {
     'extra_response_fields': ['username'],
     'item_methods': ['GET', 'PATCH', 'DELETE'],
     'resource_methods': ['GET', 'POST'],
-    'schema': routes.users.schema,
+    'schema': schema,
     'authentication': AdminAuth()
 }
 
