@@ -151,7 +151,7 @@ class Address(orm.MongoORM):
             else:
                 raise AttributeError('Address not within the allowed boundaries')
         except Exception:
-            pass
+            raise AttributeError('Invalid address or geocoding failure')
 
         return self
 
