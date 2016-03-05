@@ -423,8 +423,11 @@ class Request(orm.MongoORM):
         any PublicInvites from being created.
         '''
 
-        # don't allow mutually cancelled to be cancelled again
-        if not (self.exists('isMutuallyCancelled') and self.get('isMutuallyCancelled')):
+        # don't allow mutually cancelled or completed to be cancelled again
+        if not (self.isComplete()
+            and self.exists('isMutuallyCancelled')
+            and self.get('isMutuallyCancelled')
+        ):
 
             # final cancellation stage, perform cancelling tasks
             if self.isMutuallyCancelled():

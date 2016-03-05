@@ -7,12 +7,19 @@ def abortInsufficientPoints():
 
     abort(422, 'Insufficient points available.')
 
+
 def abortImmutableMutuallyCancelled():
     ''' Raised when attempting to modify or enable a previously mutually
     cancelled Request.
     '''
 
     abort(422, 'Cannot modify a mutually cancelled Request.')
+
+def abortAlreadyCompleted():
+    ''' Raised when attempting to cancel a completed Request.
+    '''
+
+    abort(422, 'Cannot request a cancellation on a completed Request.')
 
 def abortExpiredInvite():
     ''' Raised when attempting to use an expired or nonexistent invite.

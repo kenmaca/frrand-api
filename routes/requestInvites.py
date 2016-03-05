@@ -177,6 +177,10 @@ def onUpdate(changes, invite):
     elif 'cancel' in changes and requestInvite.getRequest().isMutuallyCancelled():
         errors.requestInvites.abortImmutableMutuallyCancelled()
 
+    # prevent cancellation of completed
+    elif 'cancel' in changes and requestInvite.isComplete():
+        errors.requestInvites.abortAlreadyCancelled()
+
 # on_updated_requestInvites
 def onUpdated(changes, invite):
     ''' (dict, dict) -> NoneType

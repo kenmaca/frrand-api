@@ -8,6 +8,12 @@ def abortInviteExpired():
 
     abort(404, 'Invite is expired')
 
+def abortAlreadyCompleted():   
+    ''' Raised when attempting to cancel a completed Request.
+    '''
+
+    errors.requests.abortAlreadyCompleted()
+
 def abortImmutableAccepted():
     ''' Raised when attempting to change the accepted status of an Invite
     that's already accepted.

@@ -208,6 +208,10 @@ def onUpdate(updated, original):
     if 'cancel' in updated and originalRequest.isMutuallyCancelled():
         errors.requests.abortImmutableMutuallyCancelled()
 
+    # prevent cancellation of a completed request
+    if 'cancel' in updated and request.isComplete():
+        errors.requests.abortAlreadyCompleted()
+
     # inviteIds have changed
     if 'inviteIds' in updated:
         if originalRequest.isAttached():
