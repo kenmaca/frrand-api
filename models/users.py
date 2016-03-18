@@ -105,26 +105,13 @@ class User(orm.MongoORM):
         deviceId if provided.
         '''
 
-        if deviceId:
-            return gcm.gcmSend(
-                deviceId if deviceId else self.get('deviceId'),
-                {
-                    'type': messageType,
-                    messageType: message
-                }
-            )
-
-        # sends to all known devices for dev use
-        else:
-            return any([
-                gcm.gcmSend(
-                    apiKey.get('deviceId'),
-                    {
-                        'type': messageType,
-                        messageType: message
-                    }
-                ) for apiKey in self.getApiKeys()
-            ])
+        return gcm.gcmSend(
+            deviceId if deviceId else self.get('deviceId'),
+            {
+                'type': messageType,
+                messageType: message
+            }
+        )
 
     def sms(self, message):
         ''' (User, str) -> bool
