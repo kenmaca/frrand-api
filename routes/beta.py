@@ -29,6 +29,13 @@ schema = {
     'pointSupplement': {
         'type': 'integer',
         'default': 0
+    },
+    'groupAttach': {
+        'type': 'objectid',
+        'data_relation': {
+            'resource': 'groups',
+            'field': '_id'
+        }
     }
 }
 

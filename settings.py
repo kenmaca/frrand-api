@@ -12,6 +12,7 @@ import routes.mirrors.profiles
 import routes.beta
 import routes.mirrors.adminUsers
 import routes.mirrors.adminApiKeys
+import routes.groups
 from config import *
 
 # Routes
@@ -29,7 +30,8 @@ DOMAIN = {
     'profiles': routes.mirrors.profiles.config,
     'beta': routes.beta.config,
     'adminUsers': routes.mirrors.adminUsers.config,
-    'adminApiKeys': routes.mirrors.adminApiKeys.config
+    'adminApiKeys': routes.mirrors.adminApiKeys.config,
+    'groups': routes.groups.config
 }
 
 # Utils
@@ -53,3 +55,4 @@ def init(app):
     routes.beta.init(app)
     routes.mirrors.adminUsers.init(app)
     routes.mirrors.adminApiKeys.init(app)
+    routes.groups.init(app)
