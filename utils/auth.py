@@ -2,7 +2,7 @@ from eve.auth import TokenAuth, BasicAuth
 from flask import current_app as app
 from errors.general import abortUnsupportedVersion
 
-MIN_CLIENT_VERSION = 0.01
+MIN_CLIENT_VERSION = 1.03
 
 # default authentication method
 class APIAuth(BasicAuth):
