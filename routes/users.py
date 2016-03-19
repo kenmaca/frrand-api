@@ -133,6 +133,17 @@ schema = {
         'type': 'string',
         'unique': True,
         'readonly': True
+    },
+    'groups': {
+        'type': 'list',
+        'schema': {
+            'type': 'objectid',
+            'data_relation': {
+                'resource': 'groups',
+                'field': '_id'
+            }
+        },
+        'default': []
     }
 }
 

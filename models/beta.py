@@ -44,3 +44,10 @@ class BetaKey(orm.MongoORM):
         '''
 
         return self.get('pointSupplement')
+
+    def getGroup(self):
+        ''' (BetaKey) -> Group
+        Gets the Group that this BetaKey will attach to an User when used.
+        '''
+
+        pass
