@@ -260,7 +260,7 @@ class Request(orm.MongoORM):
         Determines whether or not this Request is complete.
         '''
 
-        return self.get('complete') or self.isMutuallyCancelled()
+        return self.get('complete')
 
     def complete(self):
         ''' (Request) -> Request
@@ -322,7 +322,7 @@ class Request(orm.MongoORM):
 
         try:
             return bool(self.getPublic())
-        except ValueError:
+        except KeyError:
             return False
 
     def feedbackSubmitted(self):
