@@ -9,7 +9,7 @@ import routes.publicRequestInvites
 import routes.feedback
 import routes.comments
 import routes.mirrors.profiles
-import routes.beta
+import routes.vouchers
 import routes.mirrors.adminUsers
 import routes.mirrors.adminApiKeys
 import routes.groups
@@ -28,7 +28,7 @@ DOMAIN = {
     'feedback': routes.feedback.config,
     'comments': routes.comments.config,
     'profiles': routes.mirrors.profiles.config,
-    'beta': routes.beta.config,
+    'vouchers': routes.vouchers.config,
     'adminUsers': routes.mirrors.adminUsers.config,
     'adminApiKeys': routes.mirrors.adminApiKeys.config,
     'groups': routes.groups.config
@@ -52,7 +52,7 @@ def init(app):
     routes.feedback.init(app)
     routes.comments.init(app)
     routes.mirrors.profiles.init(app)
-    routes.beta.init(app)
+    routes.vouchers.init(app)
     routes.mirrors.adminUsers.init(app)
     routes.mirrors.adminApiKeys.init(app)
     routes.groups.init(app)

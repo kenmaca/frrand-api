@@ -7,9 +7,9 @@ def abortFaultyDeviceId():
 
     abort(401, 'Unable to create an APIKey due to a faulty deviceId being provided.')
 
-def abortInvalidBetaKey():
-    ''' Raised when attempting to create an APIKey with an invalid betaKey on an User that
+def abortInvalidVoucher():
+    ''' Raised when attempting to create an APIKey with an invalid Voucher on an User that
     has never been activated before.
     '''
 
-    abort(403, 'Unable to create an APIKey due to invalid betaKey provided..')
+    abort(403, 'Unable to create an APIKey due to invalid Voucher.')

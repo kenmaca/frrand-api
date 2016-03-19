@@ -23,8 +23,8 @@ if __name__ == '__main__':
     # run
     tornado.options.parse_command_line()
     server = HTTPServer(WSGIContainer(app), ssl_options={
-        'certfile': 'api.frrand.com.crt',
-        'keyfile': 'api.frrand.com.key'
+        'certfile': 'dev-api.frrand.com.crt',
+        'keyfile': 'dev-api.frrand.com.key'
     })
     server.listen(443)
     IOLoop.instance().start()

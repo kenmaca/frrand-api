@@ -1,10 +1,10 @@
-from utils.auth import GenerateBetaKeyAuth
+from utils.auth import GenerateVoucherAuth
 from flask import current_app as app, abort
 import random
 import string
 
 schema = {
-    'betaKey': {
+    'voucher': {
         'type': 'string',
         'minlength': 1,
         'unique': True
@@ -40,14 +40,14 @@ schema = {
 }
 
 config = {
-    'item_title': 'beta',
+    'item_title': 'voucher',
     'public_methods': ['POST', 'GET'],
     'public_item_methods': [],
     'allowed_filters': [],
     'item_methods': [],
     'resource_methods': ['POST', 'GET'],
     'auth_field': None,
-    'authentication': GenerateBetaKeyAuth(),
+    'authentication': GenerateVoucherAuth(),
     'schema': schema
 }
 
@@ -56,19 +56,19 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
-    app.on_insert_beta += onInsert
+    app.on_insert_vouchers += onInsert
 
 # hooks
 
 # on_insert_beta
-def onInsert(insertBeta):
+def onInsert(insertVouchers):
     ''' (list of dicts) -> NoneType
     An Eve hook used prior to insertion.
     '''
 
-    for beta in insertBeta:
-        if 'betaKey' not in beta:
-            beta['betaKey'] = (
+    for voucher in insertVouchers:
+        if 'voucher' not in voucher:
+            voucher['voucher'] = (
                 ''.join(
                     random.choice(string.ascii_uppercase)
                     for x in range(6)
@@ -77,4 +77,4 @@ def onInsert(insertBeta):
         else:
 
             # force uppercase
-            beta['betaKey'] = beta['betaKey'].upper()
+            voucher['voucher'] = voucher['voucher'].upper()

@@ -11,7 +11,7 @@ schema = {
         'minlength': 10,
         'required': True
     },
-    'betaKey': {
+    'voucher': {
         'type': 'string',
     },
     'createdBy': {
@@ -82,29 +82,29 @@ def _provision(apiKey):
         apiKey['createdBy']
     )
 
-    # require new users to activate their accounts with a beta key
+    # require new users to activate their accounts with a voucher/betakey
     if not user.exists('activated') or not user.get('activated'):
         try:
-            import models.beta as beta
-            apiKey['betaKey'] = apiKey['betaKey'].upper()
-            betaKey = beta.BetaKey.findOne(
+            import models.vouchers as vouchers
+            apiKey['voucher'] = apiKey['voucher'].upper()
+            voucher = vouchers.Voucher.findOne(
                 app.data.driver.db,
-                betaKey=apiKey['betaKey']
+                voucher=apiKey['voucher']
             )
 
-            if betaKey.isUsed():
+            if voucher.isUsed():
                 raise KeyError()
 
             # mark as used and activate the user account
-            betaKey.use(user).commit()
+            voucher.use(user).commit()
             (user
                 .set('activated', True)
-                .increment('points', betaKey.getSupplement())
+                .increment('points', voucher.getSupplement())
                 .commit()
             )
 
         except KeyError:
-            errors.apiKeys.abortInvalidBetaKey()
+            errors.apiKeys.abortInvalidVoucher()
 
     # only insert into MongoDB if GCM went through
     if user.message(

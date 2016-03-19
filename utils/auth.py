@@ -165,13 +165,13 @@ class NoAuth(BasicAuth):
 
         return None
 
-# generate apiKey facebookId authentication method
-class GenerateBetaKeyAuth(TokenAuth):
-    ''' An authentication method used for the generation of betaKeys.
+# generate voucher admin authentication method
+class GenerateVoucherAuth(TokenAuth):
+    ''' An authentication method used for the generation of Vouchers.
     '''
 
     def check_auth(self, token, allowed_roles, resource, method):
-        ''' (GenerateBetaKeyAuth, str, list, str, str) -> bool
+        ''' (GenerateVoucherAuth, str, list, str, str) -> bool
         Checks if the provided token is a fixed key.
         '''
 
