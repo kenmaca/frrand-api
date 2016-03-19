@@ -5,3 +5,5 @@ nohup.out
 *.pem
 *.csr
 *.key
+run.py
+config.py
