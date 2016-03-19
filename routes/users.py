@@ -70,7 +70,7 @@ schema = {
     'activated': {
         'type': 'boolean',
         'readonly': True,
-        'default': False
+        'default': True
     },
     'phone': {
         'type': 'string',
