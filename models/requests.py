@@ -241,14 +241,7 @@ class Request(orm.MongoORM):
             ]
 
             # remove PublicInvite if it exists
-            if self.get('publicRequestInviteId'):
-                import models.publicRequestInvites as publicInvites
-                publicInvites.PublicInvite.fromObjectId(
-                    self.db,
-                    self.get('publicRequestInviteId')
-                ).remove()
-
-                self.set('publicRequestInviteId', None)
+            self.removePublic()
 
         else:
             raise ValueError('Cannot attach Invite to this Request')
@@ -343,6 +336,16 @@ class Request(orm.MongoORM):
                 self.db,
                 self.get('publicRequestInviteId')
             )
+
+    def removePublic(self):
+        ''' (Request) -> Request
+        Removes the associated PublicInvite if it exists.
+        '''
+
+        if self.isPublic():
+            self.getPublic().remove()
+        self.set('publicRequestInviteId', None)
+        return self
 
     def getAttached(self):
         ''' (Request) -> models.requestInvites.Invite
@@ -440,8 +443,7 @@ class Request(orm.MongoORM):
                 ).commit()
 
                 # remove public listing if present
-                if self.isPublic():
-                    self.getPublic().remove()
+                self.removePublic()
 
                 # remove invites if not attached
                 if not self.isAttached():
