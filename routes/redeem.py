@@ -44,16 +44,16 @@ def onInsert(redeems):
     user = models.users.getCurrentUser(app.data.driver.db)
     if user:
         for redeemed in redeems:
-        try:
-            voucher = models.vouchers.Voucher.findOne(
-                app.data.driver.db,
-                voucher=redeemed['voucher']
-            )            
-            if voucher.isUsed() or not voucher.isEligible(user):
-                raise KeyError()
+            try:
+                voucher = models.vouchers.Voucher.findOne(
+                    app.data.driver.db,
+                    voucher=redeemed['voucher']
+                )            
+                if voucher.isUsed() or not voucher.isEligible(user):
+                    raise KeyError()
 
-        except KeyError:
-            errors.redeem.abortInvalidVoucher()
+            except KeyError:
+                errors.redeem.abortInvalidVoucher()
     else:
         errors.redeem.abortUnknownUser()
 
