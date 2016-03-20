@@ -28,7 +28,10 @@ class Voucher(orm.MongoORM):
         Sets this Voucher as used by the User.
         '''
 
-        self.push('usedBy', user.getId())
+        if not self.isUsed() and self.isEligible(user):
+            self.push('usedBy', user.getId())
+            user.set('activated', True).increment('points', self.getSupplement()).commit()
+            self.getGroup() and self.getGroup().join(user)
         return self
 
     def isUsed(self):
@@ -37,6 +40,13 @@ class Voucher(orm.MongoORM):
         '''
 
         return len(self.get('usedBy')) >= self.get('limit')
+
+    def isEligible(self, user):
+        ''' (Voucher, User) -> bool
+        Determines if user is eligible to use this Voucher.
+        '''
+
+        return not (user.getId() in self.get('usedBy'))
 
     def getSupplement(self):
         ''' (Voucher) -> int
@@ -50,4 +60,9 @@ class Voucher(orm.MongoORM):
         Gets the Group that this Voucher will attach to an User when used.
         '''
 
-        pass
+        if self.exists('groupAttach') and self.get('groupAttach'):
+            import models.groups
+            try:
+                return models.groups.fromObjectId(self.db, self.get('groupAttach'))
+            except KeyError:
+                pass

@@ -1,4 +1,5 @@
 from flask import current_app as app
+import errors.groups
 
 schema = {
     'name': {
@@ -45,4 +46,31 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
-    pass
+    app.on_inserted_groups += onInserted
+    app.on_update_groups += onUpdate
+
+# hooks
+
+def onInserted(groups):
+    ''' (dict) -> NoneType
+    An Eve hook called after insertion.
+    '''
+
+    import models.users
+    user = models.users.getCurrentUser(app.data.driver.db)
+    if user:
+        for group in groups:
+            if not (user.getId() in group['admins']):
+
+                # add creator as an admin of newly created Group
+                group['admins'].append(user.getId())
+
+def onUpdate(changes, original):
+    ''' (dict, dict) -> NoneType
+    An Eve hook used before update.
+    '''
+
+    import models.users
+    user = models.users.getCurrentUser(app.data.driver.db)
+    if not user or not (user.getId() in original['admins']):
+        errors.groups.abortNotAdmin()

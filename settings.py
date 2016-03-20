@@ -13,6 +13,7 @@ import routes.vouchers
 import routes.mirrors.adminUsers
 import routes.mirrors.adminApiKeys
 import routes.groups
+import routes.redeem
 from config import *
 
 # Routes
@@ -31,7 +32,8 @@ DOMAIN = {
     'vouchers': routes.vouchers.config,
     'adminUsers': routes.mirrors.adminUsers.config,
     'adminApiKeys': routes.mirrors.adminApiKeys.config,
-    'groups': routes.groups.config
+    'groups': routes.groups.config,
+    'redeem': routes.redeem.config
 }
 
 # Utils
@@ -56,3 +58,4 @@ def init(app):
     routes.mirrors.adminUsers.init(app)
     routes.mirrors.adminApiKeys.init(app)
     routes.groups.init(app)
+    routes.redeem.init(app)

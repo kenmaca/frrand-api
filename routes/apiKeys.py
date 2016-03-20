@@ -92,16 +92,11 @@ def _provision(apiKey):
                 voucher=apiKey['voucher']
             )
 
-            if voucher.isUsed():
+            if voucher.isUsed() and not voucher.isEligible(user):
                 raise KeyError()
 
             # mark as used and activate the user account
             voucher.use(user).commit()
-            (user
-                .set('activated', True)
-                .increment('points', voucher.getSupplement())
-                .commit()
-            )
 
         except KeyError:
             errors.apiKeys.abortInvalidVoucher()

@@ -1,5 +1,5 @@
 from utils.auth import GenerateVoucherAuth
-from flask import current_app as app, abort
+from flask import current_app as app
 import random
 import string
 

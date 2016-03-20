@@ -94,6 +94,11 @@ class Invite(orm.MongoORM):
         self.getOwner().message(
             *messages.requestInvites.attached(self.getId())
         )
+
+        # contribute to Group totals if they exist, only contribute to primary Group
+        for group in self.getOwner().getGroups():
+            group.contribute().commit()
+            return self
         return self
 
     def complete(self):

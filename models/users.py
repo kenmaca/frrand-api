@@ -291,6 +291,16 @@ class User(orm.MongoORM):
             )
         return self
 
+    def getGroups(self):
+        ''' (User) -> list of Group
+        Gets all Groups that this User belongs to.
+        '''
+
+        import models.groups
+        return [models.groups.Group.fromObjectId(self.db, group)
+            for group in models.groups.Group.compat(self).get('groups')
+        ]
+
     @staticmethod
     def generateUsername(db, min=2, max=2):
         ''' (pymongo.database.Database, str) -> User

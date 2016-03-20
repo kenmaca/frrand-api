@@ -146,6 +146,17 @@ class MongoORM:
         self.updateList(field).append(value)
         return self
 
+    def pushUnique(self, field, value):
+        ''' (MongoORM, object, object) -> MongoORM
+        Appends value to the list field only if it doesn't already exist.
+
+        REQ: field's value is a list
+        '''
+
+        if not (value in self.get(field)):
+            self.push(field, value)
+        return self
+
     def pop(self, field, index=0):
         ''' (MongoORM, object) -> object
         Removes and returns the first element in the list at field.
