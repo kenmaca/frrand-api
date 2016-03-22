@@ -15,7 +15,7 @@ schema = {
 
 config = {
     'item_title': 'redeemed',
-    'public_methods': ['POST'],
+    'public_methods': [],
     'public_item_methods': [],
     'allowed_filters': [],
     'item_methods': [],

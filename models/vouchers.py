@@ -63,6 +63,6 @@ class Voucher(orm.MongoORM):
         if self.exists('groupAttach') and self.get('groupAttach'):
             import models.groups
             try:
-                return models.groups.fromObjectId(self.db, self.get('groupAttach'))
+                return models.groups.Group.fromObjectId(self.db, self.get('groupAttach'))
             except KeyError:
                 pass
