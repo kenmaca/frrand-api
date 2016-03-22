@@ -60,10 +60,17 @@ def onInserted(groups):
     user = models.users.getCurrentUser(app.data.driver.db)
     if user:
         for group in groups:
-            if not (user.getId() in group['admins']):
+            import models.groups
+            group = models.groups.Group(
+                app.data.driver.db,
+                models.groups.Group.collection,
+                **group
+            )
+
+            if not (user.getId() in group.get('admins')):
 
                 # add creator as an admin of newly created Group
-                group['admins'].append(user.getId())
+                group.push('admins', user.getId()).commit()
 
 def onUpdate(changes, original):
     ''' (dict, dict) -> NoneType
