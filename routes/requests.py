@@ -1,6 +1,5 @@
 from flask import current_app as app, g
 from eve.methods.post import post_internal
-from datetime import datetime
 from googleplaces import GooglePlaces, GooglePlacesError
 from config import PLACES_API_KEY
 import errors.requests

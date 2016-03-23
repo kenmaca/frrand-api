@@ -1,5 +1,6 @@
 import models.orm as orm
 from datetime import datetime
+from pytz import UTC
 
 class Request(orm.MongoORM):
     ''' A representation of a Request in Frrand.
@@ -305,7 +306,7 @@ class Request(orm.MongoORM):
 
         try:
             return bool(self.getAttached())
-        except ValueError:
+        except KeyError:
             return False
 
     def isPublic(self):
@@ -418,6 +419,54 @@ class Request(orm.MongoORM):
                 'requestId': self.getId()
             })
         ]
+
+    def hasWarnedStale(self):
+        ''' (Request) -> bool
+        Determines if the requester was contacted to refresh this
+        Request from becoming stale.
+        '''
+
+        return self.exists('warnedStale') and self.get('warnedStale')
+
+    def warnStale(self):
+        ''' (Request) -> Request
+        Sends out a warning to the requester in an attempt to refresh
+        this Request from being stale.
+        '''
+
+        self.getOwner().message('refreshStaleRequest', self.getId())
+        self.set('warnedStale', True)
+        return self
+
+    def refreshStale(self, refreshedRequestedTime):
+        ''' (Request, datetime.datetime) -> Request
+        Updates the requestedTime for this Request and resets the 
+        warnedStale flag to prevent it from cancelled by the server
+        for being stale.
+        '''
+
+        self.set('requestedTime', refreshedRequestedTime).set('warnedStale', False)
+        return self
+
+    def isPastDue(self):
+        ''' (Request) -> bool
+        Determines if this Request is past due.
+        '''
+
+        return (
+            self.get('requestedTime') < datetime.utcnow().replace(tzinfo=UTC)
+            and not self.isAttached()
+            and not self.isComplete()
+            and not self.isMutuallyCancelled()
+        )
+
+    def isStale(self):
+        ''' (Request) -> bool
+        Determines if this Request should be cancelled due to inactivity from
+        the requester.
+        '''
+
+        return self.isPastDue() and self.hasWarnedStale()
 
     def requestCancellation(self):
         ''' (Request) -> Request

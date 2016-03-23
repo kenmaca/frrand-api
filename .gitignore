@@ -7,3 +7,4 @@ nohup.out
 *.key
 run.py
 config.py
+logs
