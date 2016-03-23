@@ -298,6 +298,10 @@ def onUpdated(changes, original):
             changes['comment']
         ).commit()
 
+    # updating requested time
+    if 'requestedTime' in changes:
+        request.refreshStale(changes['requestedTime']).commit()
+
 # on_fetched_item_requests
 def onFetchedItem(fetchedRequest):
     ''' (dict) -> NoneType
