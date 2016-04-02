@@ -1,0 +1,48 @@
+doctype html
+html
+  head
+    title Frrand Admin
+    meta(name="viewport" content="width=device-width, initial-scale=1.0" charset="utf-8")
+    link(rel="shortcut icon" type="image/png" href="http://frrand.com/img/frrand-head.png")
+
+    // Vendor
+    link(rel="stylesheet" href="/admin-panel/assets/css/materialize.min.css" media="screen, projection")
+    // Custom
+    link(rel="stylesheet" href="/admin-panel/assets/css/main.css")
+    
+    // Dev
+    //- link(rel="stylesheet" href="/assets/css/materialize.min.css" media="screen, projection")
+    //- // Custom
+    //- link(rel="stylesheet" href="/assets/css/main.css")
+
+  body
+
+    nav
+        .nav-wrapper
+            a(href="#").brand-logo.center
+                img(src="http://frrand.com/img/frrand-head.png")
+                //- b Frrand
+            ul#nav-mobile.left.hide-on-med-and-down
+                li: a(href="#") Overview
+                li: a(href="#") Stats
+                li: a(href="#") Users
+                li: a(href="#") History
+
+    .stage
+        .row
+            .col.l6.center.
+                h4 Total Users
+
+            .col.l6.center
+                h4 Total Requests
+
+    // JS
+    script(src="/admin-panel/assets/js/jquery.min.js")
+    script(src="/admin-panel/assets/js/materialize.js")
+    script(src="/admin-panel/assets/js/main.js")
+
+    // Dev
+    //- script(src="/assets/js/jquery.min.js")
+    //- script(src="/assets/js/materialize.js")
+    //- script(src="/assets/js/main.js")
+

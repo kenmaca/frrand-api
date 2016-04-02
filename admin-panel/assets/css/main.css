@@ -1,0 +1,16 @@
+body {
+  background: #e6e6e8;
+  color: #c43235;
+}
+nav {
+  background: #300032;
+  color: #e6e6e8;
+}
+nav .brand-logo img {
+  height: 60px;
+  padding-top: 5px;
+}
+.stage .col {
+  border: 1px solid #fff;
+  width: 400px;
+}
