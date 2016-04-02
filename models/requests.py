@@ -476,13 +476,10 @@ class Request(orm.MongoORM):
         '''
 
         # don't allow mutually cancelled or completed to be cancelled again
-        if not (self.isComplete()
-            and self.exists('isMutuallyCancelled')
-            and self.get('isMutuallyCancelled')
-        ):
+        if not self.isComplete() and not self.isMutuallyCancelled():
 
             # final cancellation stage, perform cancelling tasks
-            if self.isMutuallyCancelled():
+            if self.isMutuallyCancellable():
 
                 # release points back to requester
                 self.getOwner().spendPoints(
@@ -522,7 +519,7 @@ class Request(orm.MongoORM):
 
         return self
 
-    def isMutuallyCancelled(self):
+    def isMutuallyCancellable(self):
         ''' (Request) -> bool
         Determines if this Request is mutually cancellable if there is
         a confirmed Invite attached to this Request.
@@ -532,3 +529,10 @@ class Request(orm.MongoORM):
             return self.exists('cancel') and self.get('cancel') and self.getAttached().exists('cancel') and self.getAttached().get('cancel')
         else:
             return self.exists('cancel') and self.get('cancel')
+
+    def isMutuallyCancelled(self):
+        ''' (Request) -> bool
+        Determines if this Request has been already mutually cancelled.
+        '''
+
+        return self.exists('isMutuallyCancelled') and self.get('isMutuallyCancelled')
