@@ -1,23 +1,59 @@
 // Color
-
 p1 = #300032
 p2 = #06000a // Black
 p3 = #c43235
 p4 = #e6e6e8
+
+// Helpers
+shadow1()
+  box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)
+
 
 body
   background p4
   color p3
   
 nav
-  background p1
+  background p2
   color p4
   .brand-logo
     img
-      height 60px
-      padding-top 5px
+      height 57px
+      padding-top 8px
       
 .stage
-  .col
-    border 1px solid white
-    width 400px 
+  .sidebar
+    // background p1
+    text-align center
+    a
+      color p4 !important
+      :hover
+        color p3
+    li
+      margin-top 1em
+    width 50px !important
+    height 100% !important
+    position absolute
+    background p1
+  .content
+    margin-left 50px
+    background p4
+    h4
+      margin-top 0 !important
+      padding-top .25em
+    // border 1px solid white
+
+
+#users-table
+  min-width 600px
+  td
+    color p1
+  td:hover
+    color red
+    
+.toast-positive
+  color green
+.toast-negative
+  color red
+.toast-neutral
+  color white

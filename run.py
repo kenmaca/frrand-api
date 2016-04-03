@@ -3,7 +3,8 @@
 from eve import Eve
 from eve_docs import eve_docs
 from flask_bootstrap import Bootstrap
-from flask import render_template, send_from_directory
+from flask import render_template, send_from_directory, request, Response
+from functools import wraps
 import os
 from utils.auth import APIAuth
 from settings import init
@@ -18,8 +19,32 @@ admin_directory = os.path.dirname(os.path.abspath(__file__)) + '/admin-panel'
 app = Eve(auth=APIAuth(), static_folder=admin_directory)
 init(app)
 
+# basic protection for admin-panel
+def check_auth(username, password):
+    """This function is called to check if a username /
+    password combination is valid.
+    """
+    return username == 'admin' and password == 'fr@@@nd'
+
+def authenticate():
+    """Sends a 401 response that enables basic auth"""
+    return Response(
+    'Could not verify your access level for that URL.\n'
+    'You have to login with proper credentials', 401,
+    {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
+
 # admin-panel SPA
-@app.route('/admin')
+@app.route('/panel')
+@requires_auth
 def admin_panel():
   return send_from_directory(admin_directory, 'index.html')
 

@@ -4,37 +4,60 @@
     <title>Frrand Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="utf-8">
     <link rel="shortcut icon" type="image/png" href="http://frrand.com/img/frrand-head.png">
-    <!-- Vendor-->
+    <!-- Vendors-->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.4.1/jsgrid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.4.1/jsgrid-theme.min.css">
+    <!-- Prod-->
     <link rel="stylesheet" href="/admin-panel/assets/css/materialize.min.css" media="screen, projection">
-    <!-- Custom-->
     <link rel="stylesheet" href="/admin-panel/assets/css/main.css">
     <!-- Dev-->
   </head>
   <body>
-    <nav>
-      <div class="nav-wrapper"><a href="#" class="brand-logo center"><img src="http://frrand.com/img/frrand-head.png"></a>
-        <ul id="nav-mobile" class="left hide-on-med-and-down">
-          <li><a href="#">Overview</a></li>
-          <li><a href="#">Stats</a></li>
-          <li><a href="#">Users</a></li>
-          <li><a href="#">History</a></li>
-        </ul>
-      </div>
-    </nav>
-    <div class="stage">
-      <div class="row">
-        <div class="col l6 center">
-          <h4> Total Users</h4>
-          
+    <div id="app" class="wrapper">
+      <nav>
+        <div class="nav-wrapper z-depth-2"><a href="#" class="brand-logo center"><img src="http://frrand.com/img/frrand-head.png"></a>
+          <ul id="nav-mobile" class="left hide-on-med-and-down">
+            <li><a v-link="'/'">Overview</a></li>
+            <li><a v-link="'/'">Stats</a></li>
+            <li><a v-link="'/users'">Users</a></li>
+            <li><a v-link="'/'">History</a></li>
+          </ul>
         </div>
-        <div class="col l6 center">
-          <h4>Total Requests</h4>
+      </nav>
+      <div class="stage z-depth-2">
+        <div class="sidebar">
+          <ul>
+            <li><a href="#"><i class="small material-icons">dashboard</i></a></li>
+            <li><a href="#"><i class="small material-icons">search</i></a></li>
+            <li><a href="#"><i class="small material-icons">people</i></a></li>
+            <li><a href="#"><i class="small material-icons">trending_up</i></a></li>
+            <li><a href="#"><i class="small material-icons">library_books</i></a></li>
+          </ul>
         </div>
+        <router-view></router-view>
+        <script type="text/x-template" id="home-template">
+          <div class="content animated fadeIn">
+            <h4 class="center">Overview</h4>
+          </div>
+        </script>
+        <script type="text/x-template" id="users-template">
+          <div class="content animated fadeIn">
+            <div id="users-table">
+            </div>
+          </div>
+        </script>
       </div>
     </div>
-    <!-- JS-->
+    <!-- Prod-->
     <script src="/admin-panel/assets/js/jquery.min.js"></script>
     <script src="/admin-panel/assets/js/materialize.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.4.1/jsgrid.min.js"></script>
+    <script src="/admin-panel/assets/js/vue.js"></script>
+    <script src="/admin-panel/assets/js/vue-resource.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/0.7.11/vue-router.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.7.0/lodash.min.js"></script>
     <script src="/admin-panel/assets/js/main.js"></script>
     <!-- Dev-->
   </body>

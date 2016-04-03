@@ -193,7 +193,7 @@ class AdminAuth(TokenAuth):
             import models.apiKeys as apiKeys
             user = apiKeys.APIKey.findOne(
                 app.data.driver.db,
-                apiKey=token
+                apiKey=token.upper()
             ).getOwner()
             return user.exists('isAdmin') and user.get('isAdmin')
 

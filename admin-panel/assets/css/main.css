@@ -3,14 +3,52 @@ body {
   color: #c43235;
 }
 nav {
-  background: #300032;
+  background: #06000a;
   color: #e6e6e8;
 }
 nav .brand-logo img {
-  height: 60px;
-  padding-top: 5px;
+  height: 57px;
+  padding-top: 8px;
 }
-.stage .col {
-  border: 1px solid #fff;
-  width: 400px;
+.stage .sidebar {
+  text-align: center;
+  width: 50px !important;
+  height: 100% !important;
+  position: absolute;
+  background: #300032;
+}
+.stage .sidebar a {
+  color: #e6e6e8 !important;
+}
+.stage .sidebar a :hover {
+  color: #c43235;
+}
+.stage .sidebar li {
+  margin-top: 1em;
+}
+.stage .content {
+  margin-left: 50px;
+  background: #e6e6e8;
+}
+.stage .content h4 {
+  margin-top: 0 !important;
+  padding-top: 0.25em;
+}
+#users-table {
+  min-width: 600px;
+}
+#users-table td {
+  color: #300032;
+}
+#users-table td:hover {
+  color: #f00;
+}
+.toast-positive {
+  color: #008000;
+}
+.toast-negative {
+  color: #f00;
+}
+.toast-neutral {
+  color: #fff;
 }

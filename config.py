@@ -7,7 +7,7 @@ MEDIA_BASE_URL = 'https://%s' % SERVER_NAME
 RETURN_MEDIA_AS_URL = True
 RETURN_MEDIA_AS_BASE64_STRING = False
 X_DOMAINS = '*'
-X_HEADERS = 'Authorization'
+X_HEADERS = ['Authorization', 'Content-Type', 'If-Match']
 
 # Database
 MONGO_HOST = 'localhost'
