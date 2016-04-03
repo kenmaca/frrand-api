@@ -30,8 +30,7 @@ schema = {
         'type': 'string'
     },
     'phone': {
-        'type': 'string',
-        'regex': '\D*(\d*)\D*(\d{3})\D*(\d{3})\D*(\d{4})\D*(\d*)$'
+        'type': 'string'
     },
     'location': {
         'type': 'point',
@@ -49,7 +48,6 @@ schema = {
     },
     'temporary': {
         'type': 'boolean',
-        'readonly': True,
         'default': False
     }
 }
@@ -75,31 +73,8 @@ def init(app):
 
     app.on_insert_addresses += onInsert
     app.on_inserted_addresses += onInserted
-    app.on_update_addresses += onUpdate
 
 # hooks
-
-# on_update_addresses
-def onUpdate(updates, originalAddress):
-    ''' (list of dict) -> NoneType
-    An Eve hook used prior to update.
-    '''
-
-    # prevent changing of coordinates
-    if 'location' in updates:
-        errors.addresses.abortImmutableCoordinates()
-
-    # prevent address changes outside boundaries
-    elif 'address' in updates:
-        try:
-            import models.addresses as addresses
-            (addresses.Address.fromObjectId(
-                    app.data.driver.db,
-                    originalAddress['_id']
-                ).changeAddress(updates['address'], EPSILON)
-            )
-        except AttributeError:
-            errors.addresses.abortAddressMismatch()
 
 # on_insert_addresses
 def onInsert(insertAddresses):
@@ -110,16 +85,7 @@ def onInsert(insertAddresses):
     import models.users as users
     for address in insertAddresses:
         _approximate(address)
-
-        # skip if created internally
-        if 'createdBy' in address:
-            _uniquePermanent(address)
-
-            # set to home address if first address created
-            if not users.User.fromObjectId(
-                app.data.driver.db, address['createdBy']
-            ).getAddresses():
-                address['name'] = 'home'        
+        _uniquePermanent(address)
 
 # on_inserted_addresses
 def onInserted(insertedAddresses):
@@ -129,13 +95,19 @@ def onInserted(insertedAddresses):
 
     import models.addresses as addresses
     for address in insertedAddresses:
-        (addresses.Address(
+        address = addresses.Address(
                 app.data.driver.db,
                 addresses.Address.collection,
                 **address
-            ).geocodeAddress()
-            .commit()
-        )
+            ).geocode(not address.exists('address'))
+
+        # set to home address if first address created
+        if not users.User.fromObjectId(
+            app.data.driver.db, address['createdBy']
+        ).getAddresses():
+            address.set('name', 'home')
+
+        address.commit()
 
 # helpers
 

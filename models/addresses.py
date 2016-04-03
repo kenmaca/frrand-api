@@ -24,33 +24,38 @@ class Address(orm.MongoORM):
 
         return orm.MongoORM.findOne(db, Address, **query)
 
-    def geocodeAddress(self):
+    def geocode(self, fromCoordinates=True):
         ''' (Address) -> Address
         Fills in the address if missing from a geocoding service.
         '''
 
-        if not self.exists('address'):
-            try:
+        try:
+            if fromCoordinates:
                 geocoded = GoogleV3(api_key=PLACES_API_KEY).reverse(
                     self.get('location')['coordinates'][::-1]
                 )
-
-                # legacy one lined address
-                self.set('address', geocoded[0].address)
-
-                # approximated coordinates
-                self.set(
-                    'approximatedCoordinates',
-                    [
-                        geocoded[1].longitude,
-                        geocoded[1].latitude
-                    ]
+            else:
+                geocoded = GoogleV3(api_key=PLACES_API_KEY).geocode(
+                    self.get('address')
                 )
 
-            except Exception:
+            # legacy one lined address
+            self.set('address', geocoded[0].address)
 
-                # TODO: try another geocoding service
-                self.set('address', 'Unknown')
+            # components
+            self.set('components', _splitIntoComponents(geocoded))
+
+            # approximated coordinates
+            self.set(
+                'approximatedCoordinates',
+                [
+                    geocoded[1].longitude,
+                    geocoded[1].latitude
+                ]
+            )
+
+        except Exception:
+            raise AttributeError('Invalid address or geocoding failure')
 
         return self
 
@@ -58,16 +63,21 @@ class Address(orm.MongoORM):
         ''' (Address) -> dict
         Builds a view of this Address, and hides fine detail of this
         Address if limit is True.
+
+        Warning: calling view may alter the Address from geocoding.
         '''
 
         addressView = super().view()
 
         # build if it didn't exist before
-        addressView['components'] = self.getComponents()
+        if not self.exists('components'):
+            self.geocode(not self.exists('address')).commit()
 
         # force limiting of fine detail
         if limit:
             formatted, components = self.getLimited()
+            addressView['roomNumber'] = None
+            addressView['buildingName'] = None
             addressView['address'] = formatted
             addressView['components'] = components
             addressView['location']['coordinates'] = addressView.get(
@@ -77,27 +87,6 @@ class Address(orm.MongoORM):
 
         return addressView
 
-    def getComponents(self):
-        ''' (Address) -> dict
-        Gets the components of this Address, or build it if it didn't
-        exist before.
-        '''
-
-        if not self.exists('components'):
-            try:
-                self.set(
-                    'components',
-                    _splitInComponents(
-                        GoogleV3(api_key=PLACES_API_KEY).geocode(
-                            self.get('address')
-                        )
-                    )
-                ).commit()
-            except Exception:
-                self.set('components', {})
-
-        return self.get('components')
-
     def getLimited(self):
         ''' (Address) -> str, dict
         Builds a limited string and component dict representing this
@@ -105,8 +94,8 @@ class Address(orm.MongoORM):
         '''
 
         limited = {
-            component: self.getComponents()[component]
-            for component in self.getComponents()
+            component: self.get('components').get(component)
+            for component in self.get('components')
             if component not in [
                 'street_number',
                 'postal_code'
@@ -131,28 +120,12 @@ class Address(orm.MongoORM):
 
         return self.get('location')
 
-    def changeAddress(self, address, eps):
+    def changeAddress(self, address):
         ''' (Address, str, float) -> Address
         Changes the address for this Address.
         '''
 
-        try:
-            geo = GoogleV3(api_key=PLACES_API_KEY).geocode(address)
-            if (
-                (
-                    abs(geo.longitude - self.get('location')['coordinates'][0]) 
-                    <= eps
-                ) and (
-                    abs(geo.latitude - self.get('location')['coordinates'][1])
-                    <= eps
-                )
-            ):
-                self.set('address', address)
-            else:
-                raise AttributeError('Address not within the allowed boundaries')
-        except Exception:
-            raise AttributeError('Invalid address or geocoding failure')
-
+        self.geocode(False)
         return self
 
 def _splitInComponents(address):
