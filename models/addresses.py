@@ -36,9 +36,11 @@ class Address(orm.MongoORM):
                 geocoded = GoogleV3(api_key=PLACES_API_KEY).geocode(
                     self.get('address')
                 )
+
                 self.set('address', geocoded[0]);
-                self.set('location']['coordinates'] =
-                    [geocoded[1][1], geocoded[1][0]]
+                point = self.get('location')
+                point['coordinates'] = [geocoded[1][1], geocoded[1][0]]
+                self.set('location', point)
 
             # get other details from coordinates
             geocoded = GoogleV3(api_key=PLACES_API_KEY).reverse(
@@ -50,7 +52,8 @@ class Address(orm.MongoORM):
                 self.set('address', geocoded[0].address)
 
             # components
-            self.set('components', _splitIntoComponents(geocoded))
+            print(geocoded)
+            self.set('components', _splitInComponents(geocoded[0]))
 
             # approximated coordinates
             self.set(
@@ -60,7 +63,6 @@ class Address(orm.MongoORM):
                     geocoded[1].latitude
                 ]
             )
-
 
         except Exception:
             raise AttributeError('Invalid address or geocoding failure')

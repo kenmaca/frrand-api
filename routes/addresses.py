@@ -89,7 +89,7 @@ def onUpdated(changes, original):
             addresses.Address.collection,
             **original
         ).update(changes).geocode(not changes.get('address'))
-    except Exception:
+    except AttributeError:
         errors.addresses.abortUnknownAddress()
 
 # on_inserted_addresses
