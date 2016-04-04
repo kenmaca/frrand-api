@@ -39,6 +39,15 @@ class Address(orm.MongoORM):
                     self.get('address')
                 )
 
+                # set coordinates for address entry method
+                self.set(
+                    'location',
+                    [
+                        geocoded[0].longitude,
+                        geocoded[0].latitude,
+                    ]
+                )
+
             # legacy one lined address
             self.set('address', geocoded[0].address)
 
