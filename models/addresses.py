@@ -30,26 +30,24 @@ class Address(orm.MongoORM):
         '''
 
         try:
-            if fromCoordinates:
-                geocoded = GoogleV3(api_key=PLACES_API_KEY).reverse(
-                    self.get('location')['coordinates'][::-1]
-                )
-            else:
+
+            # replace with more accurate name and coordinates
+            if not fromCoordinates:
                 geocoded = GoogleV3(api_key=PLACES_API_KEY).geocode(
                     self.get('address')
                 )
+                self.set('address', geocoded[0]);
+                self.set('location']['coordinates'] =
+                    [geocoded[1][1], geocoded[1][0]]
 
-                # set coordinates for address entry method
-                self.set(
-                    'location',
-                    [
-                        geocoded[0].longitude,
-                        geocoded[0].latitude,
-                    ]
-                )
+            # get other details from coordinates
+            geocoded = GoogleV3(api_key=PLACES_API_KEY).reverse(
+                self.get('location')['coordinates'][::-1]
+            )
 
             # legacy one lined address
-            self.set('address', geocoded[0].address)
+            if not self.exists('address'):
+                self.set('address', geocoded[0].address)
 
             # components
             self.set('components', _splitIntoComponents(geocoded))
@@ -62,6 +60,7 @@ class Address(orm.MongoORM):
                     geocoded[1].latitude
                 ]
             )
+
 
         except Exception:
             raise AttributeError('Invalid address or geocoding failure')
@@ -136,6 +135,17 @@ class Address(orm.MongoORM):
 
         self.geocode(False)
         return self
+
+    def getOwner(self):
+        ''' (Address) -> models.users.User
+        Gets the owner of this Address.
+        '''
+
+        import models.users as users
+        return users.User.fromObjectId(
+            self.db,
+            self.get('createdBy')
+        )
 
 def _splitInComponents(address):
     ''' (geopy.location.Location) -> dict

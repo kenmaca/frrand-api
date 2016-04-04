@@ -71,21 +71,26 @@ def init(app):
     Adds this route's specific hooks to this route.
     '''
 
-    app.on_insert_addresses += onInsert
+    app.on_updated_addresses += onUpdated
     app.on_inserted_addresses += onInserted
 
 # hooks
 
-# on_insert_addresses
-def onInsert(insertAddresses):
-    ''' (list of dict) -> NoneType
-    An Eve hook used to prior to insertion.
+# on_updated_addresses
+def onUpdated(changes, original):
+    ''' (dict, dict) -> NoneType
+    An Eve hook used after update.
     '''
 
-    import models.users as users
-    for address in insertAddresses:
-        _approximate(address)
-        _uniquePermanent(address)
+    import models.addresses as addresses
+    try:
+        address = addresses.Address(
+            app.data.driver.db,
+            addresses.Address.collection,
+            **original
+        ).update(changes).geocode(not changes.get('address'))
+    except Exception:
+        errors.addresses.abortUnknownAddress()
 
 # on_inserted_addresses
 def onInserted(insertedAddresses):
@@ -95,42 +100,17 @@ def onInserted(insertedAddresses):
 
     import models.addresses as addresses
     for address in insertedAddresses:
-        address = addresses.Address(
+        try:
+            address = addresses.Address(
                 app.data.driver.db,
                 addresses.Address.collection,
                 **address
-            ).geocode(not address.exists('address'))
+            ).geocode(not address.get('address'))
 
-        # set to home address if first address created
-        if not users.User.fromObjectId(
-            app.data.driver.db, address['createdBy']
-        ).getAddresses():
-            address.set('name', 'home')
+            # set to home address if first address created
+            if not address.getOwner().getAddresses():
+                address.set('name', 'home')
 
-        address.commit()
-
-# helpers
-
-def _approximate(address):
-    ''' (dict) -> NoneType
-    Approximates the address coordinates within DECIMAL_PLACES accuracy.
-    '''
-
-    address['location']['coordinates'] = [
-        round(address['location']['coordinates'][0], DECIMAL_PLACES),
-        round(address['location']['coordinates'][1], DECIMAL_PLACES)
-    ]
-
-def _uniquePermanent(address):
-    ''' (dict) -> NoneType
-    Prevent duplicate permanent addresses (based on coordinates).
-    '''
-
-    existing = app.data.driver.db['addresses'].find_one({
-        'createdBy': address['createdBy'],
-        'location': address['location'],
-        'temporary': False
-    })
-
-    if existing:
-        errors.addresses.abortAddressUniqueness()
+            address.commit()
+        except Exception:
+            errors.addresses.abortUnknownAddress()

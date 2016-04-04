@@ -6,12 +6,12 @@ def abortImmutableCoordinates():
 
     abort(422, 'Coordinates are read-only')
 
-def abortAddressMismatch():
+def abortUnknownAddress():
     ''' Raised when attempting to update an Address with an address that is
-    not within 111m of its coordinates.
+    not able to be geocoded.
     '''
 
-    abort(422, 'Address does not match coordinates within 111 metres')
+    abort(422, 'Address provided is not in the right format or could not be found')
 
 def abortAddressUniqueness():
     ''' Raised when attempting to create a new Address that already exists for
