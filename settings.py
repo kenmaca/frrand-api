@@ -15,6 +15,7 @@ import routes.mirrors.adminApiKeys
 import routes.mirrors.adminRequests
 import routes.groups
 import routes.redeem
+import routes.landmarks
 from config import *
 
 # Routes
@@ -35,7 +36,8 @@ DOMAIN = {
     'adminRequests': routes.mirrors.adminRequests.config,
     'adminApiKeys': routes.mirrors.adminApiKeys.config,
     'groups': routes.groups.config,
-    'redeem': routes.redeem.config
+    'redeem': routes.redeem.config,
+    'landmarks': routes.landmarks.config
 }
 
 # Utils
@@ -62,3 +64,4 @@ def init(app):
     routes.mirrors.adminApiKeys.init(app)
     routes.groups.init(app)
     routes.redeem.init(app)
+    routes.landmarks.init(app)
