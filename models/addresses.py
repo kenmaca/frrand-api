@@ -55,8 +55,8 @@ class Address(orm.MongoORM):
         if not self.exists('address'):
             self.set('address', geocoded[0].address)
 
-        # components
-        self.set('components', _splitInComponents(geocoded[0]))
+        # components, find the first geocoded address with a route starting from most specific
+        self.set('components', _splitInComponents(geocoded))
 
         # fail if street is not in components
         if not self.get('components').get('route'):
@@ -156,20 +156,26 @@ class Address(orm.MongoORM):
             self.get('createdBy')
         )
 
-def _splitInComponents(address):
-    ''' (geopy.location.Location) -> dict
+def _splitInComponents(addresses):
+    ''' (list of geopy.location.Location) -> dict
     Converts a geocoded Location into a dictionary split into components.
     '''
 
-    components = {}
-    for component in address.raw['address_components']:
-        try:
-            components[component['types'][0]] = component['long_name']
+    for address in addresses:
+        components = {}
+        for component in address.raw['address_components']:
+            try:
+                components[component['types'][0]] = component['long_name']
 
-            # add limited postal prefix
-            if component['types'][0] == 'postal_code':
-                components['postal_code_prefix'] = component['long_name'][:3]
-        except IndexError:
-            pass
+                # add limited postal prefix
+                if component['types'][0] == 'postal_code':
+                    components['postal_code_prefix'] = component['long_name'][:3]
+            except IndexError:
+                pass
 
+        # return first (most specific) address with a route present
+        if 'route' in components:
+            return components
+
+    # otherwise, return the last address (likely will never reach here)
     return components
