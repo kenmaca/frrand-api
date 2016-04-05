@@ -88,9 +88,12 @@ def onUpdated(changes, original):
             app.data.driver.db,
             addresses.Address.collection,
             **original
-        ).update(changes).geocode(not changes.get('address'))
-    except Exception:
-        errors.addresses.abortUnknownAddress()
+        ).update(changes).geocode(not changes.get('address')).commit()
+    except Exception as e:
+
+        # revert to original and abort
+        address.update(original).commit()
+        errors.addresses.abortUnknownAddress(str(e))
 
 # on_inserted_addresses
 def onInserted(insertedAddresses):
@@ -105,12 +108,16 @@ def onInserted(insertedAddresses):
                 app.data.driver.db,
                 addresses.Address.collection,
                 **address
-            ).geocode(not address.get('address'))
+            )
+            address.geocode(not address.get('address'))
 
             # set to home address if first address created
             if not address.getOwner().getAddresses():
                 address.set('name', 'home')
 
             address.commit()
-        except Exception:
-            errors.addresses.abortUnknownAddress()
+        except Exception as e:
+
+            # don't save a failed geocoded address and abort
+            address.remove()
+            errors.addresses.abortUnknownAddress(str(e))

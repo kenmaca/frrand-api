@@ -6,12 +6,12 @@ def abortImmutableCoordinates():
 
     abort(422, 'Coordinates are read-only')
 
-def abortUnknownAddress():
+def abortUnknownAddress(message=None):
     ''' Raised when attempting to update an Address with an address that is
     not able to be geocoded.
     '''
 
-    abort(422, 'Address provided is not in the right format or could not be found')
+    abort(422, message or 'Address provided is not in the right format or could not be found')
 
 def abortAddressUniqueness():
     ''' Raised when attempting to create a new Address that already exists for

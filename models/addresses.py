@@ -29,43 +29,47 @@ class Address(orm.MongoORM):
         Fills in the address if missing from a geocoding service.
         '''
 
-        try:
-
-            # replace with more accurate name and coordinates
-            if not fromCoordinates:
-                geocoded = GoogleV3(api_key=PLACES_API_KEY).geocode(
-                    self.get('address')
-                )
-
-                self.set('address', geocoded[0]);
-                point = self.get('location')
-                point['coordinates'] = [geocoded[1][1], geocoded[1][0]]
-                self.set('location', point)
-
-            # get other details from coordinates
-            geocoded = GoogleV3(api_key=PLACES_API_KEY).reverse(
-                self.get('location')['coordinates'][::-1]
+        # replace with more accurate name and coordinates
+        if not fromCoordinates:
+            geocoded = GoogleV3(api_key=PLACES_API_KEY).geocode(
+                self.get('address')
             )
 
-            # legacy one lined address
-            if not self.exists('address'):
-                self.set('address', geocoded[0].address)
+            if not geocoded:
+                raise AttributeError('Invalid address or geocoding failure')
 
-            # components
-            print(geocoded)
-            self.set('components', _splitInComponents(geocoded[0]))
+            self.set('address', geocoded[0]);
+            point = self.get('location')
+            point['coordinates'] = [geocoded[1][1], geocoded[1][0]]
+            self.set('location', point)
 
-            # approximated coordinates
-            self.set(
-                'approximatedCoordinates',
-                [
-                    geocoded[1].longitude,
-                    geocoded[1].latitude
-                ]
-            )
+        # get other details from coordinates
+        geocoded = GoogleV3(api_key=PLACES_API_KEY).reverse(
+            self.get('location')['coordinates'][::-1]
+        )
 
-        except Exception:
-            raise AttributeError('Invalid address or geocoding failure')
+        if not geocoded:
+            raise AttributeError('Invalid coordinates or geocoding failure')
+
+        # legacy one lined address
+        if not self.exists('address'):
+            self.set('address', geocoded[0].address)
+
+        # components
+        self.set('components', _splitInComponents(geocoded[0]))
+
+        # fail if street is not in components
+        if not self.get('components').get('route'):
+            raise AttributeError('Address is too vague and a street name could not be resolved')
+
+        # approximated coordinates
+        self.set(
+            'approximatedCoordinates',
+            [
+                geocoded[1].longitude,
+                geocoded[1].latitude
+            ]
+        )
 
         return self
 
@@ -81,7 +85,10 @@ class Address(orm.MongoORM):
 
         # build if it didn't exist before
         if not self.exists('components'):
-            self.geocode(not self.exists('address')).commit()
+            try:
+                self.geocode(not self.exists('address')).commit()
+            except AttributeError:
+                self.set('components', {})
 
         # force limiting of fine detail
         if limit:
