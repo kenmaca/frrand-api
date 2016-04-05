@@ -266,20 +266,14 @@ class User(orm.MongoORM):
         Sets a verification code for this User's phone number.
         '''
 
-        # prevent reset if code exists already
-        if (
-            not self.exists('_verificationCode')
-            or self.exists('_verificationCode')
-            and not self.get('_verificationCode')
-        ):
-            self.set('phoneVerified', False)
-            self.set('_verificationCode', str(random.randint(100000, 999999)))
+        self.set('phoneVerified', False)
+        self.set('_verificationCode', str(random.randint(100000, 999999)))
         
-            # active sending disabled until terence stops wasting my money
-            self.sms(
-                'Your Frrand Verification Code is: %s'
-                % self.get('_verificationCode')
-            )
+        # active sending disabled until terence stops wasting my money
+        self.sms(
+            'Your Frrand Verification Code is: %s'
+            % self.get('_verificationCode')
+        )
 
         return self
 
