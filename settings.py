@@ -10,6 +10,7 @@ import routes.feedback
 import routes.comments
 import routes.mirrors.profiles
 import routes.vouchers
+import routes.mirrors.adminAddresses
 import routes.mirrors.adminUsers
 import routes.mirrors.adminApiKeys
 import routes.mirrors.adminRequests
@@ -33,6 +34,7 @@ DOMAIN = {
     'comments': routes.comments.config,
     'profiles': routes.mirrors.profiles.config,
     'vouchers': routes.vouchers.config,
+    'adminAddresses': routes.mirrors.adminAddresses.config,
     'adminUsers': routes.mirrors.adminUsers.config,
     'adminRequests': routes.mirrors.adminRequests.config,
     'adminApiKeys': routes.mirrors.adminApiKeys.config,
@@ -61,6 +63,7 @@ def init(app):
     routes.comments.init(app)
     routes.mirrors.profiles.init(app)
     routes.vouchers.init(app)
+    routes.mirrors.adminAddresses.init(app)
     routes.mirrors.adminUsers.init(app)
     routes.mirrors.adminRequests.init(app)
     routes.mirrors.adminApiKeys.init(app)
