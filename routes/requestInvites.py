@@ -3,7 +3,7 @@ from datetime import datetime
 import errors.requestInvites
 
 # default expiry time of each requestInvite until deletion in minutes
-DEFAULT_EXPIRY = 15
+DEFAULT_EXPIRY = 5
 
 schema = {
     'requestId': {

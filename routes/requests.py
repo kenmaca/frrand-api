@@ -6,7 +6,7 @@ import errors.requests
 import messages.requests
 
 # number of invites to send at a time
-BATCH_SIZE = 100
+BATCH_SIZE = 5
 
 schema = {
     'items': {
