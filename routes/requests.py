@@ -370,7 +370,10 @@ def onInserted(insertedRequests):
                 **request
             )
 
-            request.matchCandidates()
+            # temporary for pizza day, remove matching for Regino's Pizza
+            if request.get('places')[0].get('placeId') != 'ChIJVcTqUHTa1IkRj_c99rSAh4g':
+                request.matchCandidates()
+    
             _refreshInvites(request)
 
             # keep aside points for awarding
