@@ -48,6 +48,18 @@ class Voucher(orm.MongoORM):
 
         return not (user.getId() in self.get('usedBy'))
 
+    def isActive(self):
+        ''' (Voucher) -> bool
+        Determines if the voucher can be used at this time (time based).
+        '''
+
+        # between start and end date (if dne, then never expires)
+        return (
+            self.get('starts') < datetime.utcnow().replace(tzinfo=UTC)
+            and not self.exists('ends')
+            or self.get('ends') > datetime.utcnow().replace(tzinfo=UTC)
+        )
+
     def getSupplement(self):
         ''' (Voucher) -> int
         Gets the point value supplement to provision to the newly created account.

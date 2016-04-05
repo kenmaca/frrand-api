@@ -50,10 +50,12 @@ def onInsert(redeems):
                     voucher=redeemed['voucher']
                 )            
                 if voucher.isUsed() or not voucher.isEligible(user):
-                    raise KeyError()
+                    raise KeyError('Voucher has already been claimed')
+                if not voucher.isActive():
+                    raise KeyError('Voucher is not active yet or has already expired')
 
-            except KeyError:
-                errors.redeem.abortInvalidVoucher()
+            except KeyError as e:
+                errors.redeem.abortInvalidVoucher(str(e))
     else:
         errors.redeem.abortUnknownUser()
 

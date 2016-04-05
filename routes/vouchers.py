@@ -1,5 +1,7 @@
 from utils.auth import GenerateVoucherAuth
 from flask import current_app as app
+from datetime import datetime
+from pytz import UTC
 import random
 import string
 
@@ -36,6 +38,13 @@ schema = {
             'resource': 'groups',
             'field': '_id'
         }
+    },
+    'starts': {
+        'type': 'datetime',
+        'default': datetime.utcnow().replace(tzinfo=UTC)
+    },
+    'ends': {
+        'type': 'datetime',
     }
 }
 
