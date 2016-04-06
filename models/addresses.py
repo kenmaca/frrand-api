@@ -94,7 +94,6 @@ class Address(orm.MongoORM):
         if limit:
             formatted, components = self.getLimited()
             addressView['roomNumber'] = None
-            addressView['buildingName'] = None
             addressView['address'] = formatted
             addressView['components'] = components
             addressView['location']['coordinates'] = addressView.get(
