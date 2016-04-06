@@ -13,7 +13,7 @@ html
     // Prod
     link(rel="stylesheet" href="/admin-panel/assets/css/materialize.min.css" media="screen, projection")
     link(rel="stylesheet" href="/admin-panel/assets/css/main.css")
-    
+
     // Dev
     //- link(rel="stylesheet" href="/assets/css/materialize.min.css" media="screen, projection")
     //- link(rel="stylesheet" href="/assets/css/main.css")
@@ -21,23 +21,24 @@ html
   body
     .wrapper#app
       nav
-        .nav-wrapper.z-depth-2
+        .nav-wrapper.z-depth-3
           a(href="#").brand-logo.center
-            img(src="http://frrand.com/img/frrand-head.png")
+            //- img(src="http://frrand.com/img/frrand-head.png")
+            span frrand
             //- b Frrand
           ul#nav-mobile.left.hide-on-med-and-down
             li: a(v-link="'/'") Overview
-            li: a(v-link="'/'") Stats
+            li: a(v-link="'/requests'") Requests
             li: a(v-link="'/users'") Users
-            li: a(v-link="'/'") History
+            li: a(v-link="'/'") Stats
 
       .stage.z-depth-2
         .sidebar
           ul
-            li: a(href="#"): i.small.material-icons dashboard
-            li: a(href="#"): i.small.material-icons search
-            li: a(href="#"): i.small.material-icons people
-            li: a(href="#"): i.small.material-icons trending_up
+            li: a(v-link="'/'"): i.small.material-icons dashboard
+            li: a(v-link="'/users'"): i.small.material-icons search
+            li: a(v-link="'/users'"): i.small.material-icons people
+            li: a(v-link="'/requests'"): i.small.material-icons trending_up
             li: a(href="#"): i.small.material-icons library_books
         router-view
           
@@ -45,46 +46,56 @@ html
         script(type="text/x-template")#home-template
           .content.animated.fadeIn
             h4.center Overview
+            .row
+              .col.s9
+                .card
+                  .card-content
+                    span.card-title Header
+                    p Content
+              .col.s3
+                .card
+                  .card-content
+                    span.card-title Header
+                    p Content
         script(type="text/x-template")#users-template
           .content.animated.fadeIn
             //- h4.center Our Users
             div#users-table
-              //- thead
-              //-   tr
-              //-     th Username
-              //-     th Active
-              //-     th Phone
-              //-     th Points
-              //-     th Rating
-              //-     th Platform
-                  th Admin
-              //- tbody
-              //-   tr(v-for="user in users")
-              //-     td {{user.username}}
-              //-     td {{user.active}}
-              //-     td {{user.phone}}
-              //-     td {{user.points}}
-              //-     td {{user.rating}}
-              //-     td {{user.deviceType}}
-              //-     td {{user.isAdmin}}
+        script(type="text/x-template")#requests-template
+          .content.animated.fadeIn
+            //- h4.center Requests
+            //- .center
+            //-   a.btn(@click="testFn") Test
+            div#requests-map
+            div#requests-table
+
+
 
     // Prod
     script(src="/admin-panel/assets/js/jquery.min.js")
     script(src="/admin-panel/assets/js/materialize.js")
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.12.0/moment.min.js")
     script(src="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.4.1/jsgrid.min.js")
     script(src="/admin-panel/assets/js/vue.js")
     script(src="/admin-panel/assets/js/vue-resource.js")
     script(src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/0.7.11/vue-router.min.js")
     script(src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.7.0/lodash.min.js")
+    script(src="/admin-panel/assets/js/chart.min.js")
+    script(src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGU6LhpZLohjF4cTMLiTdc2BOPtKszQys&region=CA")
+    script(src="/admin-panel/assets/js/oms.min.js")
     script(src="/admin-panel/assets/js/main.js")
 
     // Dev
     //- script(src="/assets/js/jquery.min.js")
     //- script(src="/assets/js/materialize.js")
+    //- script(src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.12.0/moment.min.js")
     //- script(src="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.4.1/jsgrid.min.js")
     //- script(src="/assets/js/vue.js")
     //- script(src="/assets/js/vue-resource.js")
     //- script(src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/0.7.11/vue-router.min.js")
     //- script(src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.7.0/lodash.min.js")
+    //- script(src="/assets/js/chart.min.js")
+    //- script(src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGU6LhpZLohjF4cTMLiTdc2BOPtKszQys&region=CA")
+    //- script(src="/assets/js/oms.min.js")
     //- script(src="/assets/js/main.js")
 

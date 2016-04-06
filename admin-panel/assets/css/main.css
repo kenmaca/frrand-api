@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css?family=Lobster");
 body {
   background: #e6e6e8;
   color: #c43235;
@@ -6,14 +7,25 @@ nav {
   background: #06000a;
   color: #e6e6e8;
 }
+nav .brand-logo {
+  font-family: lobster;
+}
+nav .brand-logo :hover {
+  color: #6bba44 !important;
+}
+nav .brand-logo span {
+  margin-left: 15px;
+}
 nav .brand-logo img {
   height: 57px;
   padding-top: 8px;
 }
+nav a:hover {
+  color: #6bba44 !important;
+}
 .stage .sidebar {
   text-align: center;
   width: 50px !important;
-  height: 100% !important;
   position: absolute;
   background: #300032;
 }
@@ -29,19 +41,28 @@ nav .brand-logo img {
 .stage .content {
   margin-left: 50px;
   background: #e6e6e8;
+  color: #000;
 }
 .stage .content h4 {
   margin-top: 0 !important;
   padding-top: 0.25em;
 }
-#users-table {
-  min-width: 600px;
+#users-table th {
+  min-width: 100px !important;
 }
 #users-table td {
+  min-width: 100px !important;
   color: #300032;
 }
 #users-table td:hover {
   color: #f00;
+}
+#requests-table th {
+  background: #06000a !important;
+  color: #fff;
+}
+#requests-map {
+  height: 600px;
 }
 .toast-positive {
   color: #008000;
@@ -51,4 +72,13 @@ nav .brand-logo img {
 }
 .toast-neutral {
   color: #fff;
+}
+.marker-positive {
+  color: #008000;
+}
+.marker-negative {
+  color: #f00;
+}
+.marker-warning {
+  color: #ffa500;
 }

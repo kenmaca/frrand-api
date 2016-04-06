@@ -1,3 +1,4 @@
+@import url(https://fonts.googleapis.com/css?family=Lobster)
 // Color
 p1 = #300032
 p2 = #06000a // Black
@@ -17,9 +18,17 @@ nav
   background p2
   color p4
   .brand-logo
+    font-family lobster
+    :hover
+      color #6BBA44 !important
+    span
+      // position absolute
+      margin-left 15px
     img
       height 57px
       padding-top 8px
+  a:hover
+    color #6BBA44 !important 
       
 .stage
   .sidebar
@@ -32,12 +41,12 @@ nav
     li
       margin-top 1em
     width 50px !important
-    height 100% !important
     position absolute
     background p1
   .content
     margin-left 50px
     background p4
+    color black
     h4
       margin-top 0 !important
       padding-top .25em
@@ -45,15 +54,32 @@ nav
 
 
 #users-table
-  min-width 600px
+  th
+    min-width 100px !important
   td
+    min-width 100px !important
     color p1
   td:hover
     color red
+
+#requests-table
+  th
+    background p2 !important
+    color white
     
+#requests-map
+  height 600px
+
 .toast-positive
   color green
 .toast-negative
   color red
 .toast-neutral
   color white
+  
+.marker-positive
+  color green
+.marker-negative
+  color red
+.marker-warning
+  color orange

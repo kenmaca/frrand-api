@@ -17,22 +17,22 @@
   <body>
     <div id="app" class="wrapper">
       <nav>
-        <div class="nav-wrapper z-depth-2"><a href="#" class="brand-logo center"><img src="http://frrand.com/img/frrand-head.png"></a>
+        <div class="nav-wrapper z-depth-3"><a href="#" class="brand-logo center"><span>frrand</span></a>
           <ul id="nav-mobile" class="left hide-on-med-and-down">
             <li><a v-link="'/'">Overview</a></li>
-            <li><a v-link="'/'">Stats</a></li>
+            <li><a v-link="'/requests'">Requests</a></li>
             <li><a v-link="'/users'">Users</a></li>
-            <li><a v-link="'/'">History</a></li>
+            <li><a v-link="'/'">Stats</a></li>
           </ul>
         </div>
       </nav>
       <div class="stage z-depth-2">
         <div class="sidebar">
           <ul>
-            <li><a href="#"><i class="small material-icons">dashboard</i></a></li>
-            <li><a href="#"><i class="small material-icons">search</i></a></li>
-            <li><a href="#"><i class="small material-icons">people</i></a></li>
-            <li><a href="#"><i class="small material-icons">trending_up</i></a></li>
+            <li><a v-link="'/'"><i class="small material-icons">dashboard</i></a></li>
+            <li><a v-link="'/users'"><i class="small material-icons">search</i></a></li>
+            <li><a v-link="'/users'"><i class="small material-icons">people</i></a></li>
+            <li><a v-link="'/requests'"><i class="small material-icons">trending_up</i></a></li>
             <li><a href="#"><i class="small material-icons">library_books</i></a></li>
           </ul>
         </div>
@@ -40,12 +40,33 @@
         <script type="text/x-template" id="home-template">
           <div class="content animated fadeIn">
             <h4 class="center">Overview</h4>
+            <div class="row">
+              <div class="col s9">
+                <div class="card">
+                  <div class="card-content"><span class="card-title">Header</span>
+                    <p>Content</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col s3">
+                <div class="card">
+                  <div class="card-content"><span class="card-title">Header</span>
+                    <p>Content</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </script>
         <script type="text/x-template" id="users-template">
           <div class="content animated fadeIn">
-            <div id="users-table">
-            </div>
+            <div id="users-table"></div>
+          </div>
+        </script>
+        <script type="text/x-template" id="requests-template">
+          <div class="content animated fadeIn">
+            <div id="requests-map"></div>
+            <div id="requests-table"></div>
           </div>
         </script>
       </div>
@@ -53,11 +74,15 @@
     <!-- Prod-->
     <script src="/admin-panel/assets/js/jquery.min.js"></script>
     <script src="/admin-panel/assets/js/materialize.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.12.0/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.4.1/jsgrid.min.js"></script>
     <script src="/admin-panel/assets/js/vue.js"></script>
     <script src="/admin-panel/assets/js/vue-resource.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/0.7.11/vue-router.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.7.0/lodash.min.js"></script>
+    <script src="/admin-panel/assets/js/chart.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGU6LhpZLohjF4cTMLiTdc2BOPtKszQys&amp;region=CA"></script>
+    <script src="/admin-panel/assets/js/oms.min.js"></script>
     <script src="/admin-panel/assets/js/main.js"></script>
     <!-- Dev-->
   </body>
