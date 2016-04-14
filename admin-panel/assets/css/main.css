@@ -9,12 +9,11 @@ nav {
 }
 nav .brand-logo {
   font-family: lobster;
+  margin: 0 auto;
+  margin-left: 25px;
 }
 nav .brand-logo :hover {
   color: #6bba44 !important;
-}
-nav .brand-logo span {
-  margin-left: 15px;
 }
 nav .brand-logo img {
   height: 57px;
@@ -25,6 +24,7 @@ nav a:hover {
 }
 .stage .sidebar {
   text-align: center;
+  z-index: 999;
   width: 50px !important;
   position: absolute;
   background: #300032;
@@ -57,12 +57,31 @@ nav a:hover {
 #users-table td:hover {
   color: #f00;
 }
+.users-stats {
+  height: 20px;
+  width: 100%;
+  color: #fff;
+  text-align: center;
+  opacity: 0.8;
+  background: #06000a;
+}
 #requests-table th {
   background: #06000a !important;
   color: #fff;
 }
 #requests-map {
   height: 600px;
+}
+.stats {
+  height: 20px;
+  width: 100%;
+  background: #000;
+  opacity: 0.7;
+  color: #fff;
+  position: absolute;
+  margin: 0 auto;
+  z-index: 9;
+  left: 0;
 }
 .toast-positive {
   color: #008000;
@@ -81,4 +100,16 @@ nav a:hover {
 }
 .marker-warning {
   color: #ffa500;
+}
+.positive {
+  color: #008000;
+}
+.negative {
+  color: #f00;
+}
+.warning {
+  color: #ffa500;
+}
+.neutral {
+  color: #fff;
 }

@@ -16,11 +16,11 @@
     return _.capitalize(String(str));
   };
 
-  API_ENDPOINT = 'https://dev-api.frrand.com';
+  API_ENDPOINT = 'https://api.frrand.com';
 
   HTTP_SETTINGS = {
     headers: {
-      Authorization: 'IBJKYFHFFZLCZHVDSYZFWABYAJWSJECM',
+      Authorization: 'JVJGBQEEOOGKVTSCHRXCIMJSZRGCNSAI',
       'Content-Type': 'application/json'
     }
   };
@@ -61,7 +61,10 @@
     data: function() {
       return {
         test: 'Hello World.',
-        users: []
+        users: [],
+        stats: {
+          today: 0
+        }
       };
     },
     methods: {
@@ -85,6 +88,22 @@
           return false;
         });
       },
+      calcUserStats: function() {
+        var _date, _today, _user, j, len, ref, results;
+        _today = moment().format('DDMMYYYY');
+        ref = this.users;
+        results = [];
+        for (j = 0, len = ref.length; j < len; j++) {
+          _user = ref[j];
+          _date = moment(new Date(_user._created));
+          if (_date.format('DDMMYYYY') === _today) {
+            results.push(this.stats.today += 1);
+          } else {
+            results.push(void 0);
+          }
+        }
+        return results;
+      },
       initUserTable: function() {
         var that;
         that = this;
@@ -98,7 +117,7 @@
             loadData: function(filter) {
               var d;
               d = $.Deferred();
-              that.$http.get(API_ENDPOINT + "/adminUsers").then(function(resp) {
+              that.$http.get(API_ENDPOINT + "/adminUsers?max_results=500").then(function(resp) {
                 var check, filterCheck, j, k, len, result;
                 check = false;
                 for (j = 0, len = filter.length; j < len; j++) {
@@ -165,7 +184,10 @@
               title: 'Rating',
               type: "text",
               width: 60,
-              align: 'center'
+              align: 'center',
+              itemTemplate: function(val) {
+                return parseFloat(val).toFixed(2);
+              }
             }, {
               name: 'requestsDelivered',
               title: 'Delivered',
@@ -192,7 +214,7 @@
               align: 'center',
               editing: false,
               "itemTemplate": function(val) {
-                return val.slice(0, -4);
+                return moment(new Date(val)).format('ddd, MMM DD @ hh:mm A');
               },
               sorter: function(date1, date2) {
                 return new Date(date1) - new Date(date2);
@@ -211,7 +233,7 @@
           },
           onRefreshed: function(args) {
             var _height, _winHeight;
-            _height = $("#users-table").height();
+            _height = $("#users-table").height() + 20;
             _winHeight = $(window).height();
             _height = _height > _winHeight ? _height : _winHeight;
             return $('.sidebar').height(_height);
@@ -224,7 +246,8 @@
     },
     ready: function() {
       console.log("Hello world!");
-      return this.initUserTable();
+      this.initUserTable();
+      return this.calcUserStats();
     }
   });
 
@@ -238,12 +261,16 @@
         requests: [],
         addresses: [],
         map: {},
-        mapOverlap: {}
+        mapOverlap: {},
+        mapObjects: [],
+        requestsCancelled: 0,
+        requestsCompleted: 0,
+        requestsPending: 0
       };
     },
     methods: {
       getUsers: function() {
-        return this.$http.get(API_ENDPOINT + "/adminUsers").then(function(resp) {
+        return this.$http.get(API_ENDPOINT + "/adminUsers?max_results=500").then(function(resp) {
           this.users = resp.data._items;
           return true;
         }, function(resp) {
@@ -270,34 +297,130 @@
           return false;
         });
       },
-      initMapMarkers: function() {
-        var LatLng, _cost, _destinationAddr, _destinationMarker, _destinationXY, _i, _items, _path, _pickupAddr, _pickupMarker, _pickupXY, _routes, _status, index, j, l, len, len1, ref, ref1, req, results, user;
-        ref = this.requests;
+      liveUpdateHandler: function() {
+        console.log('Updating...');
+        toast('Fetching data from DB');
+        return $('#requests-table').jsGrid('loadData');
+      },
+      initMap: function() {
+        var browserSupportFlag, handleNoGeolocation, iw, that, toronto;
+        toronto = new google.maps.LatLng(43.6532, -79.3832);
+        this.map = new google.maps.Map(document.getElementById("requests-map"), {
+          zoom: 13
+        });
+        that = this;
+        handleNoGeolocation = function(errorFlag) {
+          var initialLocation;
+          if (errorFlag === true) {
+            initialLocation = toronto;
+          } else {
+            initialLocation = toronto;
+          }
+          that.map.setCenter(initialLocation);
+        };
+        if (navigator.geolocation) {
+          browserSupportFlag = true;
+          navigator.geolocation.getCurrentPosition((function(position) {
+            var initialLocation;
+            initialLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+            that.map.setCenter(initialLocation);
+          }), function() {
+            handleNoGeolocation(browserSupportFlag);
+          });
+        } else {
+          browserSupportFlag = false;
+          handleNoGeolocation(browserSupportFlag);
+        }
+        this.mapOverlap = new OverlappingMarkerSpiderfier(this.map);
+        iw = new google.maps.InfoWindow();
+        google.maps.event.addListener(iw, 'closeclick', function() {
+          console.log('Closed marker!');
+          return this._path.setMap(null);
+        });
+        return this.mapOverlap.addListener('click', function(marker, event) {
+          iw._path = new google.maps.Polyline({
+            path: marker.routes,
+            geodesic: true,
+            strokeColor: '#00007f',
+            strokeOpacity: 0.8,
+            strokeWeight: 3
+          });
+          if (window._path) {
+            window._path.setMap(null);
+            window._path = iw._path;
+          } else {
+            window._path = iw._path;
+          }
+          iw._path.setMap(that.map);
+          iw.setContent(marker.desc);
+          return iw.open(that.map, marker);
+        });
+      },
+      initMapMarkers: function(requests) {
+        var LatLng, _cost, _destinationAddr, _destinationMarker, _destinationXY, _historyObj, _i, _items, _path, _pickupAddr, _pickupMarker, _pickupXY, _routes, _status, index, j, l, len, len1, ref, req, results, that, user;
+        that = this;
         results = [];
-        for (j = 0, len = ref.length; j < len; j++) {
-          req = ref[j];
+        for (j = 0, len = requests.length; j < len; j++) {
+          req = requests[j];
           if (req.cancel || req.complete) {
             continue;
           }
           _destinationAddr = _.find(this.addresses, {
             _id: req.destination
           });
+          console.log(req.destination, this.addresses);
+          if (!_destinationAddr) {
+            this.getAddresses();
+            _destinationAddr = _.find(that.addresses, {
+              _id: req.destination
+            });
+            if (!_destinationAddr) {
+              continue;
+            }
+          }
           _pickupAddr = req.places[0];
           user = this.findUser(req.createdBy);
+          user = user ? user : {};
           _destinationXY = _destinationAddr.location.coordinates;
+          _pickupXY = _pickupAddr.location.coordinates;
+          _routes = [
+            {
+              lat: _pickupXY[1],
+              lng: _pickupXY[0]
+            }, {
+              lat: _destinationXY[1],
+              lng: _destinationXY[0]
+            }
+          ];
+          _path = new google.maps.Polyline({
+            path: _routes,
+            geodesic: true,
+            strokeColor: '#FF0000',
+            strokeOpacity: 0.8,
+            strokeWeight: 1
+          });
+          _pickupMarker = new google.maps.Marker({
+            position: new google.maps.LatLng(_pickupXY[1], _pickupXY[0]),
+            title: _pickupAddr.address,
+            map: this.map,
+            animation: google.maps.Animation.DROP,
+            routes: _routes,
+            icon: location.hostname === "localhost" ? '/assets/images/frrand-pickup-marker.png' : '/admin-panel/assets/images/frrand-pickup-marker.png'
+          });
           LatLng = new google.maps.LatLng(_destinationXY[1], _destinationXY[0]);
           _destinationMarker = new google.maps.Marker({
             position: LatLng,
             title: _destinationAddr.address,
+            routes: _routes,
             map: this.map,
             animation: google.maps.Animation.DROP,
             icon: location.hostname === "localhost" ? '/assets/images/frrand-marker.png' : '/admin-panel/assets/images/frrand-marker.png'
           });
           _items = "";
           _cost = 0;
-          ref1 = req.items;
-          for (index = l = 0, len1 = ref1.length; l < len1; index = ++l) {
-            _i = ref1[index];
+          ref = req.items;
+          for (index = l = 0, len1 = ref.length; l < len1; index = ++l) {
+            _i = ref[index];
             _items += "<b>" + _i.quantity + "</b>x - <b>" + _i.name + "</b> for $" + (_i.price.toFixed(2));
             _items += index !== req.items.length - 1 ? '<br>' : '';
             _cost += parseFloat(_i.price);
@@ -316,42 +439,53 @@
             _status["class"] = 'marker-warning';
             _status.status = 'Pending - waiting for pickup';
           }
-          _destinationMarker.desc = "<span><b class=\"center\">" + user.username + " [" + (capitalize(_destinationAddr.name)) + "]</b></span><br>\n<span><em>" + user.phone + " - [" + user.rating + "/5] - [" + user.points + " pts] </em></span><br>\n<span><b>To:</b> " + _destinationAddr.address + "</span><br>\n<span><b>From:</b> " + _pickupAddr.address + "</span><br>\n<span>" + (_destinationAddr.roomNumber ? "<b>Room:</b> " + _destinationAddr.roomNumber(+" - ") : "") + " " + (_destinationAddr.buildingName ? "<b>Building:</b> " + _destinationAddr.buildingName + "<br>" : "") + " </span>\n<hr><span>" + _items + "</span><br>\n<hr>\n<span><b>Total: </b> $" + (_cost.toFixed(2)) + "</span><br>\n<span><b>Delivery Time:</b> " + (moment(new Date(req.requestedTime)).format('ddd, MMM MM @ hh:mm A')) + "</span><br>\n<span><b>Status:</b> <em class=\"" + _status["class"] + "\">" + _status.status + "</em> </span>";
-          _pickupXY = _pickupAddr.location.coordinates;
-          _pickupMarker = new google.maps.Marker({
-            position: new google.maps.LatLng(_pickupXY[1], _pickupXY[0]),
-            title: _pickupAddr.address,
-            map: this.map,
-            animation: google.maps.Animation.DROP,
-            icon: location.hostname === "localhost" ? '/assets/images/frrand-pickup-marker.png' : '/admin-panel/assets/images/frrand-pickup-marker.png'
-          });
-          _pickupMarker.desc = "<b>" + _pickupAddr.address + "</b>";
-          _routes = [
-            {
-              lat: _pickupXY[1],
-              lng: _pickupXY[0]
-            }, {
-              lat: _destinationXY[1],
-              lng: _destinationXY[0]
-            }
-          ];
-          _path = new google.maps.Polyline({
-            path: _routes,
-            geodesic: true,
-            strokeColor: '#FF0000',
-            strokeOpacity: 0.8,
-            strokeWeight: 1
-          });
+          _destinationMarker.desc = "<span><b class=\"center\">" + user.username + " [" + (capitalize(_destinationAddr.name)) + "]</b></span><br>\n<span><em>" + user.phone + " - [" + (user.rating ? user.rating.toFixed(2) : 0) + "/5] - [" + user.points + " pts] </em></span><br>\n<span><b>To:</b> " + _destinationAddr.address + "</span><br>\n<span>" + (_destinationAddr.roomNumber ? "<b>Room:</b> " + String(_destinationAddr.roomNumber) + " - " : "") + " " + (_destinationAddr.buildingName ? "<b>Building:</b> " + _destinationAddr.buildingName + "<br>" : "") + " </span>\n<span><b>From:</b> " + _pickupAddr.address + "</span><br>\n<hr><span>" + _items + "</span><br>\n<hr>\n<span><b>Total: </b> $" + (_cost.toFixed(2)) + "</span><br>\n<span><b>Delivery Time:</b> " + (moment(new Date(req.requestedTime)).format('ddd, MMM MM @ hh:mm A')) + "</span><br>\n<span><b>Status:</b> <em class=\"" + _status["class"] + "\">" + _status.status + "</em> </span>";
+          _pickupMarker.desc = "<b>" + _pickupAddr.address + "</b><br>\n<hr><span>" + _items + "</span><br>\n<hr>\n<span><b>Total: </b> $" + (_cost.toFixed(2)) + "</span><br>\n<span><b>Requester: </b> " + user.username + "</span><br>\n<span><b>Delivery Time:</b> " + (moment(new Date(req.requestedTime)).format('ddd, MMM MM @ hh:mm A')) + "</span><br>";
           _path.setMap(this.map);
+          _historyObj = {
+            _id: req._id,
+            to: _destinationMarker,
+            _from: _pickupMarker,
+            path: _path,
+            req: req
+          };
+          this.mapObjects.push(_historyObj);
           this.mapOverlap.addMarker(_destinationMarker);
-          results.push(this.mapOverlap.addMarker(_pickupMarker));
+          this.mapOverlap.addMarker(_pickupMarker);
+          results.push(console.log('Plotting', _destinationAddr));
         }
         return results;
       },
       findUser: function(id) {
-        return _.find(this.users, {
+        var _user, that;
+        _user = _.find(this.users, {
           '_id': id
-        } || null);
+        });
+        that = this;
+        if (!_user) {
+          this.getUsers().then(function() {
+            return _user = _.find(that.users, {
+              '_id': id
+            });
+          });
+        }
+        return _user || null;
+      },
+      calcStats: function() {
+        var cancelled, completed, pending;
+        cancelled = _.filter(this.requests, {
+          'cancel': true
+        });
+        completed = _.filter(this.requests, {
+          'complete': true
+        });
+        pending = _.filter(this.requests, {
+          'cancel': false,
+          'complete': false
+        });
+        this.requestsCancelled = cancelled.length || 0;
+        this.requestsCompleted = completed.length || 0;
+        return this.requestsPending = pending.length || 0;
       },
       getRequests: function() {
         return this.$http.get(API_ENDPOINT + "/adminRequests").then(function(resp) {
@@ -375,11 +509,52 @@
               var d;
               d = $.Deferred();
               that.$http.get(API_ENDPOINT + "/adminRequests").then(function(resp) {
-                var result;
+                var _find, _pending, _pendingObj, _toAdd, j, len, removeFromMap, result;
                 result = resp.data._items;
                 d.resolve(result);
-                console.log(result);
-                return that.requests = result;
+                that.requests = result;
+                that.calcStats();
+                if (that.mapObjects.length !== 0) {
+                  removeFromMap = function(obj) {
+                    that.mapOverlap.removeMarker(obj.to);
+                    that.mapOverlap.removeMarker(obj._from);
+                    obj.to.setMap(null);
+                    obj._from.setMap(null);
+                    return obj.path.setMap(null);
+                  };
+                  _pending = _.filter(that.requests, {
+                    'cancel': false,
+                    'complete': false
+                  });
+                  _toAdd = [];
+                  for (j = 0, len = _pending.length; j < len; j++) {
+                    _pendingObj = _pending[j];
+                    _find = _.find(that.mapObjects, {
+                      _id: _pendingObj._id
+                    });
+                    if (_find) {
+                      if (_.isEqual(_find.req, _pendingObj)) {
+                        continue;
+                      } else {
+                        if (_pendingObj.cancel || _pendingObj.complete) {
+                          removeFromMap(_find);
+                        } else {
+                          removeFromMap(_find);
+                          _toAdd.push(_pendingObj);
+                        }
+                        _.remove(that.mapObjects, {
+                          _id: _pendingObj._id
+                        });
+                      }
+                    } else {
+                      _toAdd.push(_pendingObj);
+                    }
+                  }
+                  that.initMapMarkers(_toAdd);
+                } else {
+                  that.initMapMarkers(that.requests);
+                }
+                return true;
               }, function(resp) {
                 console.log('failed');
                 return false;
@@ -395,7 +570,13 @@
               width: 100,
               editing: false,
               itemTemplate: function(val) {
-                return that.findUser(val).username;
+                var _x;
+                _x = that.findUser(val);
+                if (_x) {
+                  return _x.username;
+                } else {
+                  return 'Unknown';
+                }
               }
             }, {
               name: 'cancel',
@@ -428,12 +609,6 @@
                   return 'No';
                 }
               }
-            }, {
-              name: 'points',
-              title: 'Points',
-              type: "number",
-              align: 'center',
-              width: 60
             }, {
               name: 'items',
               title: 'Items',
@@ -485,23 +660,32 @@
               align: 'center',
               editing: false,
               "itemTemplate": function(val) {
-                return val.slice(0, -4);
+                return moment(new Date(val)).format('ddd, MMM DD @ hh:mm A');
               },
               sorter: function(date1, date2) {
                 return new Date(date1) - new Date(date2);
               }
             }, {
               name: 'requestedTime',
-              title: 'Pickup Time',
+              title: 'Pickup',
               type: "text",
-              width: 150,
+              width: 80,
               align: 'center',
               editing: false,
               "itemTemplate": function(val) {
-                return val.slice(0, -4);
+                return moment(new Date(val)).format('hh:mm A');
               },
               sorter: function(date1, date2) {
                 return new Date(date1) - new Date(date2);
+              }
+            }, {
+              name: 'places',
+              title: 'From:',
+              type: "text",
+              width: 150,
+              align: 'center',
+              itemTemplate: function(val) {
+                return val[0].address;
               }
             }
           ],
@@ -512,9 +696,7 @@
             _height = _height > _winHeight ? _height : _winHeight;
             return $('.sidebar').height(_height);
           },
-          rowClick: function(args) {
-            return that.getAddresses();
-          }
+          rowClick: function(args) {}
         });
       },
       testFn: function() {
@@ -522,55 +704,21 @@
       }
     },
     ready: function() {
-      var initMap, that;
+      var that;
       that = this;
       console.log('[Requests Page] - Ready');
-      initMap = function() {
-        var browserSupportFlag, handleNoGeolocation, iw, toronto;
-        toronto = new google.maps.LatLng(43.6532, -79.3832);
-        that.map = new google.maps.Map(document.getElementById("requests-map"), {
-          zoom: 10
-        });
-        handleNoGeolocation = function(errorFlag) {
-          var initialLocation;
-          if (errorFlag === true) {
-            initialLocation = toronto;
-          } else {
-            initialLocation = toronto;
-          }
-          that.map.setCenter(initialLocation);
-        };
-        if (navigator.geolocation) {
-          browserSupportFlag = true;
-          navigator.geolocation.getCurrentPosition((function(position) {
-            var initialLocation;
-            initialLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-            that.map.setCenter(initialLocation);
-          }), function() {
-            handleNoGeolocation(browserSupportFlag);
-          });
-        } else {
-          browserSupportFlag = false;
-          handleNoGeolocation(browserSupportFlag);
-        }
-        that.mapOverlap = new OverlappingMarkerSpiderfier(that.map);
-        iw = new google.maps.InfoWindow();
-        return that.mapOverlap.addListener('click', function(marker, event) {
-          iw.setContent(marker.desc);
-          return iw.open(that.map, marker);
-        });
-      };
       return $(function() {
-        initMap();
-        that.getUsers().then(function() {
-          return that.initRequestsTable();
-        });
-        return that.getAddresses().then(function() {
-          return that.getRequests().then(function() {
-            return that.initMapMarkers();
+        return that.getUsers().then(function() {
+          return that.getAddresses().then(function() {
+            that.initMap();
+            that.initRequestsTable();
+            return window.liveUpdateTimer = setInterval(that.liveUpdateHandler, 30000);
           });
         });
       });
+    },
+    beforeDestroy: function() {
+      return window.clearInterval(window.liveUpdateTimer);
     }
   });
 

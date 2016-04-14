@@ -60,13 +60,15 @@
         </script>
         <script type="text/x-template" id="users-template">
           <div class="content animated fadeIn">
+            <div class="users-stats"><span>Total Users: <b>{{users.length}} </b></span><span>Joined Today: <b>{{stats.today}}</b></span></div>
             <div id="users-table"></div>
           </div>
         </script>
         <script type="text/x-template" id="requests-template">
           <div class="content animated fadeIn">
+            <div class="center stats"><span class="positive">Completed: <b>[{{requestsCompleted}}] </b></span><span class="warning"> Pending: <b>[{{requestsPending}}]</b></span><span class="negative"> Cancelled: <b>[{{requestsCancelled}}] </b></span></div>
             <div id="requests-map"></div>
-            <div id="requests-table"></div>
+            <div id="requests-table">         </div>
           </div>
         </script>
       </div>
@@ -80,7 +82,7 @@
     <script src="/admin-panel/assets/js/vue-resource.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/0.7.11/vue-router.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.7.0/lodash.min.js"></script>
-    <script src="/admin-panel/assets/js/chart.min.js"></script>
+    <script src="/admin-panel/assets/js/Chart.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGU6LhpZLohjF4cTMLiTdc2BOPtKszQys&amp;region=CA"></script>
     <script src="/admin-panel/assets/js/oms.min.js"></script>
     <script src="/admin-panel/assets/js/main.js"></script>

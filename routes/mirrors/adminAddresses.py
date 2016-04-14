@@ -14,6 +14,7 @@ config = {
         'source': 'addresses'
     },
     'item_methods': ['GET', 'PATCH', 'DELETE'],
+    'pagination': False,
     'resource_methods': ['GET', 'POST'],
     'mongo_indexes': {
         '_id_': [('_id', 1)],

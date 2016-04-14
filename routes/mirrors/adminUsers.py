@@ -23,6 +23,8 @@ config = {
     },
     'extra_response_fields': ['username'],
     'item_methods': ['GET', 'PATCH', 'DELETE'],
+    #'pagination_limit': 500,
+    'pagination': False,
     'resource_methods': ['GET', 'POST'],
     'schema': schema,
     'authentication': AdminAuth()

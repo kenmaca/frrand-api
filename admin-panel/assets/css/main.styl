@@ -19,11 +19,10 @@ nav
   color p4
   .brand-logo
     font-family lobster
+    margin 0 auto
+    margin-left 25px
     :hover
       color #6BBA44 !important
-    span
-      // position absolute
-      margin-left 15px
     img
       height 57px
       padding-top 8px
@@ -34,6 +33,7 @@ nav
   .sidebar
     // background p1
     text-align center
+    z-index 999
     a
       color p4 !important
       :hover
@@ -61,6 +61,13 @@ nav
     color p1
   td:hover
     color red
+.users-stats
+  height 20px
+  width 100%
+  color white
+  text-align center
+  opacity .8
+  background p2
 
 #requests-table
   th
@@ -69,7 +76,19 @@ nav
     
 #requests-map
   height 600px
-
+.stats
+  height 20px
+  width 100%
+  background black
+  opacity .7
+  color white
+  // border 1px solid black
+  // background red
+  // left 40%
+  position absolute
+  margin 0 auto
+  z-index 9
+  left 0
 .toast-positive
   color green
 .toast-negative
@@ -83,3 +102,12 @@ nav
   color red
 .marker-warning
   color orange
+  
+.positive
+  color green
+.negative
+  color red
+.warning
+  color orange
+.neutral
+  color white
