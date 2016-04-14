@@ -445,7 +445,7 @@ def _refreshInvites(request):
     '''
 
     # prevent generating anymore invites once attached
-    if not request.isAttached() and not request.isComplete():
+    if not request.isAttached() and not request.isComplete() and not request.isMutuallyCancelled():
         if not request.get('inviteIds'):
             if request.get('candidates'):
                 _generateRequestInvites(request, BATCH_SIZE)
