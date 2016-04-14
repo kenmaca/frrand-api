@@ -2,7 +2,7 @@ from flask import current_app as app
 
 config = {
     'item_title': 'profile',
-    'public_methods': ['GET'],
+    'public_methods': [],
     'public_item_methods': ['GET'],
     'datasource': {
         'source': 'users',
@@ -18,7 +18,7 @@ config = {
     },
     'allowed_filters': [],
     'item_methods': ['GET'],
-    'resource_methods': ['GET']
+    'resource_methods': []
 }
 
 def init(app):
