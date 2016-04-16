@@ -60,7 +60,7 @@ schema = {
     'points': {
         'type': 'integer',
         'readonly': True,
-        'default': 1
+        'default': 0
     },
     'pendingPoints': {
         'type': 'integer',
@@ -284,6 +284,23 @@ def _getFacebook(accessToken, userDict):
         userDict['firstName'] = user['first_name']
         userDict['lastName'] = user['last_name']
         userDict['isMale'] = user['gender'] == 'male'
+        i = 0
+
+        # change username, cycle until free username found
+        while True:
+            import models.users as users
+            try:
+                username = "%s %s%s" % (
+                    userDict['firstName'],
+                    userDict['lastName'],
+                    ' (%s)' % str(i) if i else ''
+                )
+                users.User.findOne(app.data.driver.db, username=username)
+                i += 1
+
+            except KeyError:
+                userDict['username'] = username
+                break
 
         # prevent duplicate association
         try:

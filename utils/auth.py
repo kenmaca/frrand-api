@@ -83,15 +83,18 @@ class FacebookAuth(TokenAuth):
         to the requested resource.
         '''
 
-        import models.users as users
-        user = users.User.findOne(
-            app.data.driver.db,
-            facebookId=token
-        )
+        try:
+            import models.users as users
+            user = users.User.findOne(
+                app.data.driver.db,
+                facebookId=token
+            )
 
-        # set creation of apiKey to this user
-        self.set_request_auth_value(user.getId())
-        return user
+            # set creation of apiKey to this user
+            self.set_request_auth_value(user.getId())
+            return user
+
+        except KeyError: pass
 
 # generate apiKey user:pass authentication method
 class UserAuth(BasicAuth):
